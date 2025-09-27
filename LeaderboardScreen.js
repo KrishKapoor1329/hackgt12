@@ -113,7 +113,7 @@ const mockLeaderboardData = [
   },
 ];
 
-const LeaderboardScreen = ({ onBack }) => {
+const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, week, month, season
   const [selectedLeague, setSelectedLeague] = useState('NFL'); // NFL, NBA
 
