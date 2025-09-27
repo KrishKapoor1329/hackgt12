@@ -109,7 +109,7 @@ const mockWatchParties = [
   },
 ];
 
-const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
+const WatchPartiesScreen = ({ onBack, onWatchPartySelect, theme, isDarkMode }) => {
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', 'friends', 'nearby'
   const [userLocation, setUserLocation] = useState({
     latitude: 33.7490,
@@ -226,7 +226,11 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
   };
 
   const renderWatchPartyCard = ({ item }) => (
-    <View style={[styles.partyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <TouchableOpacity 
+      style={[styles.partyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+      onPress={() => onWatchPartySelect && onWatchPartySelect(item)}
+      activeOpacity={0.7}
+    >
       <View style={styles.partyHeader}>
         <View style={styles.hostInfo}>
           <Text style={styles.hostAvatar}>{item.hostAvatar}</Text>
@@ -270,20 +274,17 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.joinButton, { 
-          backgroundColor: item.attendees >= item.maxAttendees ? theme.border : theme.primary 
-        }]}
-        onPress={() => joinWatchParty(item.id)}
-        disabled={item.attendees >= item.maxAttendees}
-      >
-        <Text style={[styles.joinButtonText, { 
-          color: item.attendees >= item.maxAttendees ? theme.textTertiary : '#ffffff' 
-        }]}>
-          {item.attendees >= item.maxAttendees ? 'Full' : 'Join Party'}
+      <View style={styles.cardFooter}>
+        <Text style={[styles.tapToJoinText, { color: theme.textTertiary }]}>
+          Tap to join watch party
         </Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={[styles.statusText, { 
+          color: item.attendees >= item.maxAttendees ? theme.error : theme.success 
+        }]}>
+          {item.attendees >= item.maxAttendees ? 'Full' : 'Available'}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const filteredParties = getFilteredParties();
@@ -296,7 +297,9 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Watch Parties</Text>
         </View>
         <TouchableOpacity onPress={createWatchParty} style={styles.createButton}>
@@ -308,17 +311,22 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
       <View style={styles.filterContainer}>
         {[
           { key: 'all', label: 'All Parties', icon: '●' },
-          { key: 'friends', label: 'Friends', icon: '▲' },
+          { key: 'friends', label: 'Friends', icon: '◉' },
           { key: 'nearby', label: 'Nearby (2mi)', icon: '◆' },
         ].map((filter) => (
           <TouchableOpacity
             key={filter.key}
             style={[
               styles.filterTab,
-              { backgroundColor: theme.surface, borderColor: theme.border },
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.border,
+                transform: [{ scale: selectedFilter === filter.key ? 1.05 : 1 }]
+              },
               selectedFilter === filter.key && { backgroundColor: theme.primary, borderColor: theme.primary }
             ]}
             onPress={() => setSelectedFilter(filter.key)}
+            activeOpacity={0.8}
           >
             <Text style={styles.filterIcon}>{filter.icon}</Text>
             <Text style={[
@@ -394,7 +402,10 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
                         </View>
                       ))}
                       
-                      <TouchableOpacity style={[styles.joinFromMapButton, { backgroundColor: theme.primary }]}>
+                      <TouchableOpacity 
+                        style={[styles.joinFromMapButton, { backgroundColor: theme.primary }]}
+                        onPress={() => onWatchPartySelect && onWatchPartySelect(party)}
+                      >
                         <Text style={styles.joinFromMapButtonText}>Join Party ({party.attendees}/{party.maxAttendees})</Text>
                       </TouchableOpacity>
                     </View>
@@ -494,9 +505,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
     resizeMode: 'contain',
   },
+  logoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.6,
   },
   createButton: {
     padding: 5,
@@ -516,11 +541,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 6,
   },
   filterIcon: {
     fontSize: 16,
@@ -707,15 +732,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   partyCard: {
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   partyHeader: {
     flexDirection: 'row',
@@ -791,13 +815,20 @@ const styles = StyleSheet.create({
   reaction: {
     fontSize: 16,
   },
-  joinButton: {
-    borderRadius: 10,
-    paddingVertical: 12,
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(139, 92, 246, 0.1)',
   },
-  joinButtonText: {
-    fontSize: 14,
+  tapToJoinText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  statusText: {
+    fontSize: 12,
     fontWeight: '600',
   },
 });
