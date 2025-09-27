@@ -11,83 +11,149 @@ import AuthScreen from './AuthScreen';
 import supabase from './supabaseClient';
 import LocationService from './LocationService';
 
-// Modern Navigation Bar Component
+// PrizePicks-style Navigation Bar
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
   const navItems = [
-    { key: 'home', icon: '●', label: 'Home' },
-    { key: 'picks', icon: '◉', label: 'Picks' },
+    { key: 'home', icon: '🏠', label: 'Home' },
+    { key: 'picks', icon: '🎯', label: 'Picks' },
     { key: 'friends', icon: '👥', label: 'Friends' },
-    { key: 'leaderboard', icon: '♔', label: 'Leaderboard' },
-    { key: 'watchparties', icon: '▶', label: 'Watch' },
-    { key: 'settings', icon: '⚙', label: 'Settings' },
+    { key: 'leaderboard', icon: '🏆', label: 'Board' },
+    { key: 'watchparties', icon: '📺', label: 'Watch' },
   ];
 
   return (
-    <View style={[styles.navigationBar, { backgroundColor: theme.surface }]}>
-      <View style={[styles.navContainer, { backgroundColor: theme.surface }]}>
-        {navItems.map((item) => (
-          <TouchableOpacity
-            key={item.key}
-            style={[
-              styles.navItem,
-              currentScreen === item.key && { 
-                backgroundColor: theme.primary + '15',
-                transform: [{ scale: 1.05 }]
-              }
-            ]}
-            onPress={() => setCurrentScreen(item.key)}
-            activeOpacity={0.7}
-          >
-            <View style={[
-              styles.navIconContainer,
-              currentScreen === item.key && { 
-                backgroundColor: theme.primary + '20',
-                transform: [{ scale: 1.1 }]
-              }
-            ]}>
-              <Text style={[
-                styles.navIcon,
-                { color: currentScreen === item.key ? theme.primary : theme.textSecondary }
-              ]}>
-                {item.icon}
-              </Text>
-            </View>
-            <Text style={[
-              styles.navLabel,
-              { 
-                color: currentScreen === item.key ? theme.primary : theme.textSecondary,
-                fontWeight: currentScreen === item.key ? '600' : '500'
-              }
-            ]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+    <View style={[styles.navigationBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+      {navItems.map((item) => (
+        <TouchableOpacity
+          key={item.key}
+          style={[
+            styles.navItem,
+            currentScreen === item.key && styles.navItemActive
+          ]}
+          onPress={() => setCurrentScreen(item.key)}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.navIcon,
+            { color: currentScreen === item.key ? theme.primary : theme.textTertiary }
+          ]}>
+            {item.icon}
+          </Text>
+          <Text style={[
+            styles.navLabel,
+            { 
+              color: currentScreen === item.key ? theme.primary : theme.textTertiary,
+              fontWeight: currentScreen === item.key ? '600' : '500'
+            }
+          ]}>
+            {item.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 };
 
-// Modern Home Screen Component
-const HomeScreen = ({ theme, isDarkMode, userStats }) => {
+// PrizePicks-style Home Screen
+const HomeScreen = ({ theme, isDarkMode, userStats, setCurrentScreen }) => {
+  const [selectedTimeframe, setSelectedTimeframe] = useState('today');
+  
+  const timeframes = [
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'This Week' },
+    { key: 'month', label: 'This Month' },
+    { key: 'all', label: 'All Time' },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
-      {/* Modern Header */}
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
-            <Text style={styles.logoText}>P</Text>
-          </View>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>PickWise</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Text style={[styles.appTitle, { color: theme.textPrimary }]}>PickWise</Text>
+          <TouchableOpacity 
+            style={[styles.settingsButton, { backgroundColor: theme.surfaceSecondary }]}
+            onPress={() => setCurrentScreen('settings')}
+          >
+            <Text style={[styles.settingsIcon, { color: theme.textSecondary }]}>⚙️</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Your Ultimate Sports Betting Experience</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+          Make your picks and compete
+        </Text>
+      </View>
+
+      {/* Timeframe Toggle */}
+      <View style={styles.timeframeContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.timeframeScroll}
+        >
+          {timeframes.map((timeframe) => (
+            <TouchableOpacity
+              key={timeframe.key}
+              style={[
+                styles.timeframeButton,
+                { 
+                  backgroundColor: selectedTimeframe === timeframe.key ? theme.primary : 'transparent',
+                  borderColor: selectedTimeframe === timeframe.key ? theme.primary : theme.border,
+                }
+              ]}
+              onPress={() => setSelectedTimeframe(timeframe.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.timeframeText,
+                { 
+                  color: selectedTimeframe === timeframe.key ? theme.textInverse : theme.textSecondary,
+                  fontWeight: selectedTimeframe === timeframe.key ? '600' : '500'
+                }
+              ]}>
+                {timeframe.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
-        {/* Today's Games Section */}
+        {/* Stats Cards */}
+        <View style={styles.statsSection}>
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.success }]}>
+                ${userStats?.totalWinnings?.toLocaleString() || '0'}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Winnings</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.primary }]}>
+                {userStats?.winRate?.toFixed(1) || '0.0'}%
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Win Rate</Text>
+            </View>
+          </View>
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.textPrimary }]}>
+                {userStats?.totalPicks || 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Picks</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.statValue, { color: theme.warning }]}>
+                {userStats?.currentStreak || 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Current Streak</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Today's Games */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Today's Games</Text>
@@ -95,83 +161,79 @@ const HomeScreen = ({ theme, isDarkMode, userStats }) => {
               <Text style={[styles.sectionAction, { color: theme.primary }]}>View All</Text>
             </TouchableOpacity>
           </View>
+          
           <View style={[styles.gameCard, { backgroundColor: theme.surface }]}>
             <View style={styles.gameHeader}>
-              <View style={styles.gameTimeContainer}>
-                <Text style={[styles.gameTime, { color: theme.textSecondary }]}>8:00 PM EST</Text>
-                <View style={[styles.liveIndicator, { backgroundColor: theme.success }]} />
+              <View style={styles.gameInfo}>
+                <Text style={[styles.gameTime, { color: theme.textSecondary }]}>8:15 PM EST</Text>
+                <View style={[styles.liveIndicator, { backgroundColor: theme.error }]}>
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
               </View>
-              <View style={[styles.leagueBadge, { backgroundColor: theme.primary + '15' }]}>
-                <Text style={[styles.gameLeague, { color: theme.primary }]}>NFL</Text>
+              <View style={[styles.leagueBadge, { backgroundColor: theme.primary }]}>
+                <Text style={styles.leagueText}>NFL</Text>
               </View>
             </View>
-            <View style={styles.gameTeams}>
-              <Text style={[styles.teamName, { color: theme.textPrimary }]}>Chiefs vs Ravens</Text>
-              <Text style={[styles.gameStatus, { color: theme.textSecondary }]}>Live • 2nd Quarter</Text>
-            </View>
-            <TouchableOpacity style={[styles.pickButton, { backgroundColor: theme.primary }]} activeOpacity={0.8}>
+            
+            <Text style={[styles.gameMatchup, { color: theme.textPrimary }]}>Chiefs vs Ravens</Text>
+            <Text style={[styles.gameStatus, { color: theme.textSecondary }]}>2nd Quarter • 14-7</Text>
+            
+            <TouchableOpacity 
+              style={[styles.pickButton, { backgroundColor: theme.primary }]}
+              activeOpacity={0.8}
+            >
               <Text style={styles.pickButtonText}>Make Pick</Text>
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Your Stats Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Your Performance</Text>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
-                <Text style={[styles.statIconText, { color: theme.primary }]}>●</Text>
+          <View style={[styles.gameCard, { backgroundColor: theme.surface }]}>
+            <View style={styles.gameHeader}>
+              <View style={styles.gameInfo}>
+                <Text style={[styles.gameTime, { color: theme.textSecondary }]}>4:25 PM EST</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>
-                {userStats?.totalPicks || 0}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Picks</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
-                <Text style={[styles.statIconText, { color: theme.primary }]}>▲</Text>
+              <View style={[styles.leagueBadge, { backgroundColor: theme.primary }]}>
+                <Text style={styles.leagueText}>NFL</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>
-                {userStats?.winRate ? `${userStats.winRate.toFixed(1)}%` : '0%'}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Win Rate</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
-                <Text style={[styles.statIconText, { color: theme.primary }]}>$</Text>
-              </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>
-                ${userStats?.totalWinnings ? userStats.totalWinnings.toLocaleString() : '0'}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Winnings</Text>
-            </View>
+            
+            <Text style={[styles.gameMatchup, { color: theme.textPrimary }]}>Cowboys vs Eagles</Text>
+            <Text style={[styles.gameStatus, { color: theme.textSecondary }]}>Starting Soon</Text>
+            
+            <TouchableOpacity 
+              style={[styles.pickButton, { backgroundColor: theme.primary }]}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.pickButtonText}>Make Pick</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* Recent Activity */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Recent Activity</Text>
-          <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.primary + '20' }]}>
-            <View style={styles.activityHeader}>
-              <View style={[styles.activityIcon, { backgroundColor: theme.primary + '25' }]}>
-                <Text style={[styles.activityIconText, { color: theme.primary }]}>▲</Text>
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: theme.textPrimary }]}>You moved up 2 spots on the leaderboard!</Text>
-                <Text style={[styles.activityTime, { color: theme.textSecondary }]}>2 hours ago</Text>
-              </View>
+          
+          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.activityIcon, { backgroundColor: theme.success + '20' }]}>
+              <Text style={styles.activityEmoji}>✅</Text>
             </View>
+            <View style={styles.activityContent}>
+              <Text style={[styles.activityText, { color: theme.textPrimary }]}>
+                Your Ravens pick won!
+              </Text>
+              <Text style={[styles.activityTime, { color: theme.textSecondary }]}>2 hours ago</Text>
+            </View>
+            <Text style={[styles.activityAmount, { color: theme.success }]}>+$125</Text>
           </View>
-          <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.primary + '20' }]}>
-            <View style={styles.activityHeader}>
-              <View style={[styles.activityIcon, { backgroundColor: theme.primary + '25' }]}>
-                <Text style={[styles.activityIconText, { color: theme.primary }]}>✓</Text>
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: theme.textPrimary }]}>Your Ravens pick won!</Text>
-                <Text style={[styles.activityTime, { color: theme.textSecondary }]}>Yesterday</Text>
-              </View>
+
+          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
+            <View style={[styles.activityIcon, { backgroundColor: theme.primary + '20' }]}>
+              <Text style={styles.activityEmoji}>📈</Text>
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={[styles.activityText, { color: theme.textPrimary }]}>
+                Moved up 3 spots on leaderboard
+              </Text>
+              <Text style={[styles.activityTime, { color: theme.textSecondary }]}>Yesterday</Text>
             </View>
           </View>
         </View>
@@ -187,8 +249,9 @@ const PicksScreen = ({ theme, isDarkMode }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       <View style={styles.centerContent}>
-        <Text style={[styles.placeholderTitle, { color: theme.textPrimary }]}>Make Picks</Text>
-        <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
+        <Text style={styles.comingSoonEmoji}>🎯</Text>
+        <Text style={[styles.comingSoonTitle, { color: theme.textPrimary }]}>Make Picks</Text>
+        <Text style={[styles.comingSoonText, { color: theme.textSecondary }]}>
           Place your bets and compete with friends
         </Text>
       </View>
@@ -198,7 +261,7 @@ const PicksScreen = ({ theme, isDarkMode }) => {
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [session, setSession] = useState(null);
   const [selectedWatchParty, setSelectedWatchParty] = useState(null);
   const [userStats, setUserStats] = useState({
@@ -223,14 +286,12 @@ export default function App() {
     try {
       setUserLocation(prev => ({ ...prev, isLoading: true }));
 
-      // First, try to get existing location from database
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('city, state, country')
         .eq('id', userId)
         .single();
 
-      // If user already has a city set and it's not "Unknown City", use it
       if (existingProfile?.city && existingProfile.city !== 'Unknown City') {
         setUserLocation({
           city: existingProfile.city,
@@ -242,13 +303,11 @@ export default function App() {
         return;
       }
 
-      // Detect current location
       const locationInfo = await LocationService.getLocationWithFallback();
       
       if (locationInfo) {
         const formattedLocation = LocationService.formatCityForDatabase(locationInfo);
         
-        // Update user profile with detected location
         const { error } = await supabase
           .from('profiles')
           .update({
@@ -271,9 +330,8 @@ export default function App() {
           setUserLocation(prev => ({ ...prev, isLoading: false }));
         }
       } else {
-        // Fallback to a default city or keep existing
         setUserLocation({
-          city: existingProfile?.city || 'Atlanta', // Default fallback
+          city: existingProfile?.city || 'Atlanta',
           state: existingProfile?.state || 'GA',
           country: existingProfile?.country || 'US',
           displayName: existingProfile?.city ? `${existingProfile.city}${existingProfile.state ? ', ' + existingProfile.state : ''}` : 'Atlanta, GA',
@@ -283,7 +341,7 @@ export default function App() {
     } catch (error) {
       console.error('Error detecting user location:', error);
       setUserLocation({
-        city: 'Atlanta', // Default fallback
+        city: 'Atlanta',
         state: 'GA',
         country: 'US',
         displayName: 'Atlanta, GA',
@@ -313,7 +371,7 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error loading user stats:', error);
-      // Set sample data for development if no profile exists
+      // Set sample data for development
       setUserStats({
         totalPicks: 38,
         correctPicks: 24,
@@ -408,7 +466,7 @@ export default function App() {
       case 'picks':
         return <PicksScreen theme={theme} isDarkMode={isDarkMode} />;
       default:
-        return <HomeScreen theme={theme} isDarkMode={isDarkMode} userStats={userStats} />;
+        return <HomeScreen theme={theme} isDarkMode={isDarkMode} userStats={userStats} setCurrentScreen={setCurrentScreen} />;
     }
   };
 
@@ -441,108 +499,100 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  
+  // Header Styles
   header: {
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 20,
     paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
-  logoContainer: {
+  headerTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  logo: {
-    width: 32,
-    height: 32,
-    marginRight: 12,
-    resizeMode: 'contain',
+  appTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  settingsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  logoText: {
-    color: '#ffffff',
+  settingsIcon: {
     fontSize: 18,
-    fontWeight: '800',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-  },
-  subtitle: {
-    fontSize: 17,
-    textAlign: 'center',
+  headerSubtitle: {
+    fontSize: 16,
     fontWeight: '500',
-    letterSpacing: 0.2,
   },
+
+  // Timeframe Toggle Styles
+  timeframeContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  timeframeScroll: {
+    paddingRight: 20,
+  },
+  timeframeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 12,
+    height: 36,
+    justifyContent: 'center',
+  },
+  timeframeText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+
+  // Content Styles
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
-  
-  // Modern Navigation Bar Styles
-  navigationBar: {
-    paddingTop: 8,
-    paddingBottom: 34, // Extra padding for iPhone safe area
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
+
+  // Stats Section
+  statsSection: {
+    marginBottom: 24,
   },
-  navContainer: {
+  statsGrid: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    gap: 12,
+    marginBottom: 12,
   },
-  navItem: {
+  statCard: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
     borderRadius: 12,
-    marginHorizontal: 2,
-  },
-  navIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
-    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
     marginBottom: 4,
   },
-  navIcon: {
-    fontSize: 18,
-  },
-  navLabel: {
-    fontSize: 10,
+  statLabel: {
+    fontSize: 13,
     fontWeight: '500',
-    letterSpacing: 0.2,
   },
 
-  // Modern Home Screen Sections
+  // Section Styles
   section: {
-    marginBottom: 28,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -551,27 +601,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  sectionAction: {
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: '600',
   },
-  
-  // Modern Game Card Styles
+  sectionAction: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Game Card Styles
   gameCard: {
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   gameHeader: {
     flexDirection: 'row',
@@ -579,148 +626,119 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  gameTimeContainer: {
+  gameInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   gameTime: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     marginRight: 8,
   },
   liveIndicator: {
-    width: 8,
-    height: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 4,
   },
+  liveText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   leagueBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  gameLeague: {
+  leagueText: {
+    color: '#ffffff',
     fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '600',
   },
-  gameTeams: {
-    marginBottom: 16,
-  },
-  teamName: {
-    fontSize: 20,
-    fontWeight: '700',
+  gameMatchup: {
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 4,
-    letterSpacing: -0.3,
   },
   gameStatus: {
     fontSize: 14,
     fontWeight: '500',
+    marginBottom: 16,
   },
   pickButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   pickButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontWeight: '600',
   },
 
-  // Modern Stats Styles
-  statsRow: {
+  // Activity Card Styles
+  activityCard: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 20,
     alignItems: 'center',
-    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  statIcon: {
+  activityIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-  },
-  statIconText: {
-    fontSize: 18,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 12,
-    textAlign: 'center',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-
-  // Modern Activity Styles
-  activityCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  activityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activityIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
   },
-  activityIconText: {
-    fontSize: 16,
+  activityEmoji: {
+    fontSize: 18,
   },
   activityContent: {
     flex: 1,
   },
   activityText: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    letterSpacing: -0.2,
+    fontWeight: '500',
+    marginBottom: 2,
   },
   activityTime: {
     fontSize: 13,
+    fontWeight: '500',
+  },
+  activityAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Navigation Bar Styles
+  navigationBar: {
+    flexDirection: 'row',
+    paddingTop: 12,
+    paddingBottom: 34,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  navItemActive: {
+    transform: [{ scale: 1.05 }],
+  },
+  navIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  navLabel: {
+    fontSize: 11,
     fontWeight: '500',
   },
 
@@ -731,13 +749,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  placeholderTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  comingSoonEmoji: {
+    fontSize: 64,
     marginBottom: 16,
+  },
+  comingSoonTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
     textAlign: 'center',
   },
-  placeholderText: {
+  comingSoonText: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,

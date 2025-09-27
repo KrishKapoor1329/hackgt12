@@ -239,23 +239,16 @@ const FriendsScreen = ({ onBack, theme, isDarkMode }) => {
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
-              <Text style={styles.logoText}>P</Text>
-            </View>
-            <Text style={[styles.title, { color: theme.textPrimary }]}>Friends</Text>
-          </View>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
-          </Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Friends</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          {friends.length} {friends.length === 1 ? 'friend' : 'friends'}
+        </Text>
         <TouchableOpacity 
           style={[styles.addButton, { backgroundColor: theme.primary }]}
           onPress={() => setShowAddModal(true)}
         >
-          <Text style={styles.addButtonText}>+</Text>
+          <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -278,10 +271,10 @@ const FriendsScreen = ({ onBack, theme, isDarkMode }) => {
         </View>
       ) : friends.length === 0 ? (
         <View style={styles.centerContent}>
-          <Text style={styles.emptyIcon}>👥</Text>
-          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No Friends Yet</Text>
+          <Text style={styles.emptyIcon}>👋</Text>
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No friends yet</Text>
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            Add friends in Settings to see them here
+            Add friends to compete and share picks
           </Text>
         </View>
       ) : (
@@ -400,77 +393,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
     color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  requestsBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  requestsBannerText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  requestsBannerAction: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
-  logo: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
-    resizeMode: 'contain',
-  },
-  logoIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
+    fontWeight: '500',
   },
+
   centerContent: {
     flex: 1,
     justifyContent: 'center',
@@ -481,12 +432,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: 64,
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -495,19 +446,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+
   listContainer: {
     padding: 20,
   },
   friendCard: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   friendInfo: {
     flexDirection: 'row',
@@ -555,29 +506,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 6,
     alignItems: 'center',
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
-  bottomBar: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-  },
-  addFriendButton: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  addFriendButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+
   // Modal styles
   modalContainer: {
     flex: 1,
@@ -587,15 +523,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   modalClose: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   modalContent: {
@@ -611,7 +547,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchInput: {
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
@@ -619,7 +555,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchButton: {
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 20,
@@ -634,9 +570,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 8,
     marginBottom: 8,
+    backgroundColor: '#f8f9fa',
   },
   resultName: {
     fontSize: 16,
@@ -645,11 +581,11 @@ const styles = StyleSheet.create({
   requestButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   requestButtonText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   requestActions: {

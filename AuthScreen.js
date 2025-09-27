@@ -45,46 +45,54 @@ const AuthScreen = ({ theme, isDarkMode, onAuthenticated }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
-            <Text style={styles.logoText}>P</Text>
-          </View>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Welcome</Text>
-        </View>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {mode === 'signIn' ? 'Sign in to continue' : 'Create your account'}
-        </Text>
-      </View>
-
-      <View style={styles.form}>
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
-          placeholder="Email"
-          placeholderTextColor={theme.textTertiary}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
-          placeholder="Password"
-          placeholderTextColor={theme.textTertiary}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-
-        <TouchableOpacity disabled={loading} onPress={handleAuth} style={[styles.primaryButton, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}>
-          <Text style={styles.primaryButtonText}>{mode === 'signIn' ? 'Sign In' : 'Sign Up'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity disabled={loading} onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-          <Text style={[styles.switchText, { color: theme.textSecondary }]}>
-            {mode === 'signIn' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+      
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>PickWise</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            {mode === 'signIn' ? 'Welcome back' : 'Create your account'}
           </Text>
-        </TouchableOpacity>
+        </View>
+
+        <View style={styles.form}>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
+            placeholder="Email"
+            placeholderTextColor={theme.textTertiary}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
+            placeholder="Password"
+            placeholderTextColor={theme.textTertiary}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <TouchableOpacity 
+            disabled={loading} 
+            onPress={handleAuth} 
+            style={[styles.primaryButton, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
+          >
+            <Text style={styles.primaryButtonText}>
+              {mode === 'signIn' ? 'Sign In' : 'Sign Up'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            disabled={loading} 
+            onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}
+            style={styles.switchButton}
+          >
+            <Text style={[styles.switchText, { color: theme.textSecondary }]}>
+              {mode === 'signIn' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -93,69 +101,51 @@ const AuthScreen = ({ theme, isDarkMode, onAuthenticated }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  content: {
+    paddingHorizontal: 24,
   },
   header: {
-    alignItems: 'center',
-    paddingTop: 32,
-    paddingBottom: 16,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  logo: {
-    width: 32,
-    height: 32,
-    marginRight: 12,
-    resizeMode: 'contain',
-  },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
+    marginBottom: 40,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '500',
   },
   form: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    gap: 16,
   },
   input: {
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    marginBottom: 12,
   },
   primaryButton: {
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
+  switchButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   switchText: {
-    textAlign: 'center',
-    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 
