@@ -18,7 +18,7 @@ const mockLeaderboardData = [
   {
     id: 1,
     username: 'GridironGuru',
-    avatar: '🏈',
+    avatar: 'GG',
     totalPicks: 47,
     correctPicks: 32,
     winRate: 68.1,
@@ -30,7 +30,7 @@ const mockLeaderboardData = [
   {
     id: 2,
     username: 'TouchdownTom',
-    avatar: '⚡',
+    avatar: 'TT',
     totalPicks: 52,
     correctPicks: 34,
     winRate: 65.4,
@@ -42,7 +42,7 @@ const mockLeaderboardData = [
   {
     id: 3,
     username: 'You',
-    avatar: '👑',
+    avatar: 'ME',
     totalPicks: 38,
     correctPicks: 24,
     winRate: 63.2,
@@ -54,7 +54,7 @@ const mockLeaderboardData = [
   {
     id: 4,
     username: 'EndZoneExpert',
-    avatar: '🎯',
+    avatar: 'EZ',
     totalPicks: 41,
     correctPicks: 25,
     winRate: 61.0,
@@ -66,7 +66,7 @@ const mockLeaderboardData = [
   {
     id: 5,
     username: 'FirstDownFrank',
-    avatar: '💪',
+    avatar: 'FF',
     totalPicks: 35,
     correctPicks: 21,
     winRate: 60.0,
@@ -78,7 +78,7 @@ const mockLeaderboardData = [
   {
     id: 6,
     username: 'HailMaryHero',
-    avatar: '🚀',
+    avatar: 'HM',
     totalPicks: 29,
     correctPicks: 17,
     winRate: 58.6,
@@ -90,7 +90,7 @@ const mockLeaderboardData = [
   {
     id: 7,
     username: 'BlitzBoss',
-    avatar: '⚔️',
+    avatar: 'BB',
     totalPicks: 33,
     correctPicks: 19,
     winRate: 57.6,
@@ -102,7 +102,7 @@ const mockLeaderboardData = [
   {
     id: 8,
     username: 'SackMaster',
-    avatar: '🏆',
+    avatar: 'SM',
     totalPicks: 26,
     correctPicks: 14,
     winRate: 53.8,
@@ -129,16 +129,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
   };
 
   const getRankIcon = (rank) => {
-    switch (rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return `#${rank}`;
-    }
+    return `#${rank}`;
   };
 
   const getWinRateColor = (winRate) => {
@@ -161,7 +152,10 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Leaderboard</Text>
+        <View style={styles.logoContainer}>
+          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Leaderboard</Text>
+        </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>NFL • {selectedFilter === 'all' ? 'All Time' : filters.find(f => f.key === selectedFilter)?.label}</Text>
       </View>
 
@@ -256,7 +250,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
                   styles.streakText,
                   { color: getStreakColor(user.streak) }
                 ]}>
-                  🔥 {user.streak} streak
+                  {user.streak} game streak
                 </Text>
               </View>
             </View>
@@ -288,11 +282,20 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 10,
   },
-
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  logo: {
+    width: 28,
+    height: 28,
+    marginRight: 10,
+    resizeMode: 'contain',
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,

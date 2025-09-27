@@ -21,7 +21,7 @@ const mockWatchParties = [
   {
     id: 1,
     hostName: 'GridironGuru',
-    hostAvatar: '🏈',
+    hostAvatar: 'GG',
     gameTitle: 'Chiefs vs Bills',
     gameTime: '8:15 PM EST',
     location: {
@@ -31,11 +31,11 @@ const mockWatchParties = [
     },
     attendees: 8,
     maxAttendees: 12,
-    reactions: ['🔥', '😤', '🏆'],
+    reactions: ['FIRE', 'HYPE', 'WIN'],
     liveReactions: [
-      { id: 1, user: 'GridironGuru', reaction: '🔥', text: 'TOUCHDOWN!!! LET\'S GO!!!', timestamp: Date.now() - 5000 },
-      { id: 2, user: 'Mike_ATL', reaction: '🏈', text: 'What a throw by Mahomes!', timestamp: Date.now() - 15000 },
-      { id: 3, user: 'ChiefsNation', reaction: '😤', text: 'Bills defense looking weak', timestamp: Date.now() - 30000 },
+      { id: 1, user: 'GridironGuru', reaction: 'FIRE', text: 'TOUCHDOWN!!! LET\'S GO!!!', timestamp: Date.now() - 5000 },
+      { id: 2, user: 'Mike_ATL', reaction: 'NICE', text: 'What a throw by Mahomes!', timestamp: Date.now() - 15000 },
+      { id: 3, user: 'ChiefsNation', reaction: 'HYPE', text: 'Bills defense looking weak', timestamp: Date.now() - 30000 },
     ],
     distance: 0.5,
     isFriend: true,
@@ -44,7 +44,7 @@ const mockWatchParties = [
   {
     id: 2,
     hostName: 'TouchdownTom',
-    hostAvatar: '⚡',
+    hostAvatar: 'TT',
     gameTitle: 'Cowboys vs Eagles',
     gameTime: '4:25 PM EST',
     location: {
@@ -54,10 +54,10 @@ const mockWatchParties = [
     },
     attendees: 5,
     maxAttendees: 8,
-    reactions: ['🦅', '⭐', '💪'],
+    reactions: ['FLY', 'STAR', 'STRONG'],
     liveReactions: [
-      { id: 4, user: 'TouchdownTom', reaction: '🦅', text: 'Eagles soaring! Fly Eagles Fly!', timestamp: Date.now() - 8000 },
-      { id: 5, user: 'PhillyFan', reaction: '⭐', text: 'Dak looking shaky today', timestamp: Date.now() - 20000 },
+      { id: 4, user: 'TouchdownTom', reaction: 'FLY', text: 'Eagles soaring! Fly Eagles Fly!', timestamp: Date.now() - 8000 },
+      { id: 5, user: 'PhillyFan', reaction: 'STAR', text: 'Dak looking shaky today', timestamp: Date.now() - 20000 },
       { id: 6, user: 'CowboyKiller', reaction: '💪', text: 'Defense stepping up big time!', timestamp: Date.now() - 45000 },
     ],
     distance: 1.2,
@@ -67,7 +67,7 @@ const mockWatchParties = [
   {
     id: 3,
     hostName: 'EndZoneExpert',
-    hostAvatar: '🎯',
+    hostAvatar: 'EZ',
     gameTitle: 'Falcons vs Saints',
     gameTime: '1:00 PM EST',
     location: {
@@ -295,7 +295,10 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
       
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Watch Parties</Text>
+        <View style={styles.logoContainer}>
+          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Watch Parties</Text>
+        </View>
         <TouchableOpacity onPress={createWatchParty} style={styles.createButton}>
           <Text style={[styles.createButtonText, { color: theme.primary }]}>+ Create</Text>
         </TouchableOpacity>
@@ -304,9 +307,9 @@ const WatchPartiesScreen = ({ onBack, theme, isDarkMode }) => {
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         {[
-          { key: 'all', label: 'All Parties', icon: '🌍' },
-          { key: 'friends', label: 'Friends', icon: '👥' },
-          { key: 'nearby', label: 'Nearby (2mi)', icon: '📍' },
+          { key: 'all', label: 'All Parties', icon: '●' },
+          { key: 'friends', label: 'Friends', icon: '▲' },
+          { key: 'nearby', label: 'Nearby (2mi)', icon: '◆' },
         ].map((filter) => (
           <TouchableOpacity
             key={filter.key}
@@ -480,6 +483,16 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 24,

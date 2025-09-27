@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
 import { useState } from 'react';
 import SettingsScreen from './SettingsScreen';
 import LeaderboardScreen from './LeaderboardScreen';
@@ -9,11 +9,11 @@ import { lightTheme, darkTheme } from './Theme';
 // Navigation Bar Component
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
   const navItems = [
-    { key: 'home', icon: '🏠', label: 'Home' },
-    { key: 'picks', icon: '🎯', label: 'Picks' },
-    { key: 'leaderboard', icon: '🏆', label: 'Leaderboard' },
-    { key: 'watchparties', icon: '📺', label: 'Watch' },
-    { key: 'settings', icon: '⚙️', label: 'Settings' },
+    { key: 'home', icon: '⌂', label: 'Home' },
+    { key: 'picks', icon: '◉', label: 'Picks' },
+    { key: 'leaderboard', icon: '♔', label: 'Leaderboard' },
+    { key: 'watchparties', icon: '▶', label: 'Watch' },
+    { key: 'settings', icon: '⚙', label: 'Settings' },
   ];
 
   return (
@@ -49,7 +49,10 @@ const HomeScreen = ({ theme, isDarkMode }) => {
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>PrizePicks 🏆</Text>
+        <View style={styles.logoContainer}>
+          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: theme.textPrimary }]}>PrizePicks</Text>
+        </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Your Ultimate Sports Betting Experience</Text>
       </View>
 
@@ -95,11 +98,11 @@ const HomeScreen = ({ theme, isDarkMode }) => {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Recent Activity</Text>
           <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.activityText, { color: theme.textPrimary }]}>🏆 You moved up 2 spots on the leaderboard!</Text>
+            <Text style={[styles.activityText, { color: theme.textPrimary }]}>You moved up 2 spots on the leaderboard!</Text>
             <Text style={[styles.activityTime, { color: theme.textSecondary }]}>2 hours ago</Text>
           </View>
           <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.activityText, { color: theme.textPrimary }]}>🎯 Your Ravens pick won!</Text>
+            <Text style={[styles.activityText, { color: theme.textPrimary }]}>Your Ravens pick won!</Text>
             <Text style={[styles.activityTime, { color: theme.textSecondary }]}>Yesterday</Text>
           </View>
         </View>
@@ -115,7 +118,7 @@ const PicksScreen = ({ theme, isDarkMode }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       <View style={styles.centerContent}>
-        <Text style={[styles.placeholderTitle, { color: theme.textPrimary }]}>🎯 Make Picks</Text>
+        <Text style={[styles.placeholderTitle, { color: theme.textPrimary }]}>Make Picks</Text>
         <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
           Place your bets and compete with friends
         </Text>
@@ -188,10 +191,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
   },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+    resizeMode: 'contain',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,

@@ -9,6 +9,7 @@ import {
   Switch,
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -103,14 +104,17 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
+        <View style={styles.logoContainer}>
+          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
         {/* Theme Toggle */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🎨 Appearance</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Appearance</Text>
           <View style={styles.settingItem}>
             <Text style={[styles.settingLabel, { color: theme.textPrimary }]}>Dark Mode</Text>
             <Switch
@@ -124,7 +128,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
         
         {/* League Selection */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🏈 League Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>League Preferences</Text>
           <View style={styles.leagueContainer}>
             <TouchableOpacity
               style={[
@@ -166,7 +170,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
 
         {/* Friends & Social */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>👥 Friends & Social</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Friends & Social</Text>
           
           <View style={styles.settingItem}>
             <Text style={[styles.settingLabel, { color: theme.textPrimary }]}>Show Online Status</Text>
@@ -196,7 +200,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
 
         {/* Social Media Linking */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🔗 Social Media</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Social Media</Text>
           
           {/* Twitter */}
           <View style={styles.socialItem}>
@@ -319,7 +323,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
 
         {/* App Info */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>ℹ️ App Info</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>App Info</Text>
           <View style={styles.infoItem}>
             <Text style={[styles.infoLabel, { color: theme.textPrimary }]}>Version</Text>
             <Text style={[styles.infoValue, { color: theme.textSecondary }]}>1.0.0</Text>
@@ -346,6 +350,16 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 24,
