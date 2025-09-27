@@ -1,17 +1,21 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SettingsScreen from './SettingsScreen';
 import LeaderboardScreen from './LeaderboardScreen';
 import WatchPartiesScreen from './WatchPartiesScreen';
+import FriendsScreen from './FriendsScreen';
 import WatchPartyDetailScreen from './WatchPartyDetailScreen';
 import { lightTheme, darkTheme } from './Theme';
+import AuthScreen from './AuthScreen';
+import supabase from './supabaseClient';
 
 // Modern Navigation Bar Component
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
   const navItems = [
     { key: 'home', icon: '●', label: 'Home' },
     { key: 'picks', icon: '◉', label: 'Picks' },
+    { key: 'friends', icon: '👥', label: 'Friends' },
     { key: 'leaderboard', icon: '♔', label: 'Leaderboard' },
     { key: 'watchparties', icon: '▶', label: 'Watch' },
     { key: 'settings', icon: '⚙', label: 'Settings' },
@@ -188,8 +192,26 @@ const PicksScreen = ({ theme, isDarkMode }) => {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(true);
+export default function YourComponent() {
+  const [session, setSession] = useState(null);
   const [selectedWatchParty, setSelectedWatchParty] = useState(null);
   const theme = isDarkMode ? darkTheme : lightTheme;
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (mounted) setSession(data.session);
+    })();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession?.user) setCurrentScreen('home');
+    });
+    return () => {
+      mounted = false;
+      listener.subscription?.unsubscribe?.();
+    };
+  }, []);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -200,6 +222,14 @@ export default function App() {
             theme={theme}
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
+          />
+        );
+      case 'friends':
+        return (
+          <FriendsScreen 
+            onBack={() => setCurrentScreen('home')}
+            theme={theme}
+            isDarkMode={isDarkMode}
           />
         );
       case 'leaderboard':
@@ -240,6 +270,16 @@ export default function App() {
         return <HomeScreen theme={theme} isDarkMode={isDarkMode} />;
     }
   };
+
+  if (!session) {
+    return (
+      <AuthScreen 
+        theme={theme}
+        isDarkMode={isDarkMode}
+        onAuthenticated={(s) => setSession(s)}
+      />
+    );
+  }
 
   return (
     <View style={styles.appContainer}>

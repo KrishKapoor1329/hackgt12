@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,10 +12,12 @@ import {
   Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import supabase from './supabaseClient';
 
 export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDarkMode }) {
   const [selectedLeague, setSelectedLeague] = useState('NFL');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [emailQuery, setEmailQuery] = useState('');
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [linkedAccounts, setLinkedAccounts] = useState({
     twitter: { connected: false, username: '' },
@@ -30,6 +32,42 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
     discord: '',
   });
 
+  const [searchResults, setSearchResults] = useState([]);
+  const [incomingRequests, setIncomingRequests] = useState([]);
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
+
+  useEffect(() => {
+    const loadRequests = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id;
+      if (!uid) return;
+      
+      // Get incoming requests with sender profile info
+      const { data: incoming } = await supabase
+        .from('friend_requests')
+        .select(`
+          *,
+          from_profile:profiles!friend_requests_from_user_fkey(username, email)
+        `)
+        .eq('to_user', uid)
+        .eq('status', 'pending');
+      
+      // Get outgoing requests with receiver profile info
+      const { data: outgoing } = await supabase
+        .from('friend_requests')
+        .select(`
+          *,
+          to_profile:profiles!friend_requests_to_user_fkey(username, email)
+        `)
+        .eq('from_user', uid)
+        .eq('status', 'pending');
+      
+      setIncomingRequests(incoming || []);
+      setOutgoingRequests(outgoing || []);
+    };
+    loadRequests();
+  }, []);
+
   const handleLeagueSelection = (league) => {
     setSelectedLeague(league);
     Alert.alert('League Updated', `Now following ${league} games and picks!`);
@@ -41,6 +79,56 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
       return;
     }
     Alert.alert('Finding Friends', `Searching for friends with number ending in ${phoneNumber.slice(-4)}...`);
+  };
+
+  const searchByEmailOrPhone = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id;
+      if (!uid) return;
+      const email = emailQuery.trim();
+      const phone = phoneNumber.trim();
+      if (!email && !phone) {
+        Alert.alert('Enter a query', 'Provide email or phone');
+        return;
+      }
+      let query = supabase.from('profiles').select('id, username, email, phone');
+      if (email) {
+        query = query.eq('email', email);
+      } else if (phone) {
+        query = query.ilike('phone', `%${phone}%`);
+      }
+      const { data, error } = await query.limit(10);
+      if (error) throw error;
+      setSearchResults((data || []).filter((r) => r.id !== uid));
+    } catch (e) {
+      Alert.alert('Search error', e.message);
+    }
+  };
+
+  const sendFriendRequest = async (toUserId) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id;
+      if (!uid) return;
+      const { error } = await supabase.from('friend_requests').insert({ from_user: uid, to_user: toUserId });
+      if (error) throw error;
+      Alert.alert('Request sent', 'Friend request has been sent');
+      setOutgoingRequests((prev) => prev.concat([{ id: Date.now().toString(), from_user: uid, to_user: toUserId, status: 'pending' }]));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  const respondToRequest = async (requestId, status) => {
+    try {
+      const { error } = await supabase.from('friend_requests').update({ status }).eq('id', requestId);
+      if (error) throw error;
+      setIncomingRequests((prev) => prev.filter((r) => r.id !== requestId));
+      Alert.alert('Updated', `Request ${status}`);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   };
 
   const handleSocialMediaLink = (platform) => {
@@ -195,7 +283,16 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Find Friends by Phone</Text>
+            <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Find Friends by Email or Phone</Text>
+            <TextInput
+              style={[styles.phoneInput, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
+              placeholder="Enter email"
+              placeholderTextColor={theme.textTertiary}
+              value={emailQuery}
+              onChangeText={setEmailQuery}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
             <TextInput
               style={[styles.phoneInput, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, color: theme.textPrimary }]}
               placeholder="Enter phone number"
@@ -204,10 +301,43 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
               onChangeText={setPhoneNumber}
               keyboardType="phone-pad"
             />
-            <TouchableOpacity style={[styles.findButton, { backgroundColor: theme.primary }]} onPress={handleFindFriends}>
-              <Text style={styles.findButtonText}>Find Friends</Text>
+            <TouchableOpacity style={[styles.findButton, { backgroundColor: theme.primary }]} onPress={searchByEmailOrPhone}>
+              <Text style={styles.findButtonText}>Search</Text>
             </TouchableOpacity>
           </View>
+
+          {searchResults.length > 0 && (
+            <View style={styles.inputContainer}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Results</Text>
+              {searchResults.map((u) => (
+                <View key={u.id} style={styles.resultRow}>
+                  <Text style={[styles.resultText, { color: theme.textPrimary }]}>{u.username || u.email || u.phone}</Text>
+                  <TouchableOpacity style={[styles.resultButton, { backgroundColor: theme.primary }]} onPress={() => sendFriendRequest(u.id)}>
+                    <Text style={styles.resultButtonText}>Request</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {incomingRequests.length > 0 && (
+            <View style={styles.inputContainer}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Incoming Requests</Text>
+              {incomingRequests.map((r) => (
+                <View key={r.id} style={styles.resultRow}>
+                  <Text style={[styles.resultText, { color: theme.textPrimary }]}>From: {r.from_user.slice(0,8)}…</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity style={[styles.resultButton, { backgroundColor: theme.success }]} onPress={() => respondToRequest(r.id, 'accepted')}>
+                      <Text style={styles.resultButtonText}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.resultButton, { backgroundColor: theme.error }]} onPress={() => respondToRequest(r.id, 'declined')}>
+                      <Text style={styles.resultButtonText}>Decline</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Social Media Linking */}
@@ -343,6 +473,21 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
           <View style={styles.infoItem}>
             <Text style={[styles.infoLabel, { color: theme.textPrimary }]}>Build</Text>
             <Text style={[styles.infoValue, { color: theme.textSecondary }]}>HackGT12</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <TouchableOpacity
+              onPress={async () => {
+                try {
+                  await supabase.auth.signOut();
+                  Alert.alert('Signed out', 'You have been signed out');
+                } catch (e) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+              style={[styles.findButton, { backgroundColor: theme.error }]}
+            >
+              <Text style={styles.findButtonText}>Sign Out</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -573,5 +718,26 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  resultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  resultText: {
+    fontSize: 14,
+  },
+  resultButton: {
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  resultButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
