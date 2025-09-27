@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SettingsScreen from './SettingsScreen';
 import LeaderboardScreen from './LeaderboardScreen';
 import WatchPartiesScreen from './WatchPartiesScreen';
+import WatchPartyDetailScreen from './WatchPartyDetailScreen';
 import { lightTheme, darkTheme } from './Theme';
 
 // Navigation Bar Component
@@ -130,6 +131,7 @@ const PicksScreen = ({ theme, isDarkMode }) => {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [selectedWatchParty, setSelectedWatchParty] = useState(null);
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   const renderScreen = () => {
@@ -155,6 +157,22 @@ export default function App() {
         return (
           <WatchPartiesScreen 
             onBack={() => setCurrentScreen('home')}
+            onWatchPartySelect={(party) => {
+              setSelectedWatchParty(party);
+              setCurrentScreen('watchpartydetail');
+            }}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        );
+      case 'watchpartydetail':
+        return (
+          <WatchPartyDetailScreen 
+            onBack={() => {
+              setCurrentScreen('watchparties');
+              setSelectedWatchParty(null);
+            }}
+            watchParty={selectedWatchParty}
             theme={theme}
             isDarkMode={isDarkMode}
           />
