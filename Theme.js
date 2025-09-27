@@ -1,4 +1,4 @@
-// Modern PrizePicks-inspired color schemes
+// Dark black theme with purple accents
 
 export const lightTheme = {
   // Background colors - Clean whites and grays
@@ -13,13 +13,13 @@ export const lightTheme = {
   textSecondary: '#64748b',
   textTertiary: '#94a3b8',
   textInverse: '#ffffff',
-  textAccent: '#3b82f6',
+  textAccent: '#8b5cf6',
   
-  // Brand colors - Modern blue accent (PrizePicks inspired)
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#1d4ed8',
-  secondary: '#8b5cf6',
+  // Brand colors - Purple accent
+  primary: '#8b5cf6',
+  primaryLight: '#a78bfa',
+  primaryDark: '#7c3aed',
+  secondary: '#a855f7',
   
   // Status colors - Vibrant and clear
   success: '#10b981',
@@ -46,48 +46,49 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  // Background colors - Deep dark grays
-  background: '#0f172a',
-  backgroundSecondary: '#1e293b',
-  surface: '#1e293b',
-  surfaceSecondary: '#334155',
-  surfaceElevated: '#475569',
+  // Background colors - Deep black with purple tints
+  background: '#000000',
+  backgroundSecondary: '#0a0a0a',
+  surface: '#1a0a1a',
+  surfaceSecondary: '#2a1a2a',
+  surfaceElevated: '#3a2a3a',
   
-  // Text colors - High contrast whites
-  textPrimary: '#f8fafc',
-  textSecondary: '#cbd5e1',
-  textTertiary: '#94a3b8',
-  textInverse: '#0f172a',
-  textAccent: '#60a5fa',
+  // Text colors - High contrast whites with purple tints
+  textPrimary: '#ffffff',
+  textSecondary: '#e1d5e1',
+  textTertiary: '#b19fb1',
+  textInverse: '#000000',
+  textAccent: '#c084fc',
   
-  // Brand colors - Bright blue for dark mode
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#1d4ed8',
-  secondary: '#8b5cf6',
+  // Brand colors - More purple throughout
+  primary: '#8b5cf6',
+  primaryLight: '#c084fc',
+  primaryDark: '#7c3aed',
+  secondary: '#a855f7',
+  tertiary: '#c084fc',
   
-  // Status colors - Vibrant for dark backgrounds
+  // Status colors - Purple-tinted for consistency
   success: '#10b981',
   successLight: '#34d399',
   error: '#ef4444',
   errorLight: '#f87171',
   warning: '#f59e0b',
   warningLight: '#fbbf24',
-  info: '#06b6d4',
+  info: '#8b5cf6',
   
-  // Border and divider colors - Subtle dark grays
-  border: '#334155',
-  borderLight: '#475569',
-  divider: '#64748b',
+  // Border and divider colors - Purple-tinted grays
+  border: '#4a3a4a',
+  borderLight: '#5a4a5a',
+  divider: '#6a5a6a',
   
-  // Shadow and overlay
-  shadow: 'rgba(0, 0, 0, 0.2)',
-  shadowMedium: 'rgba(0, 0, 0, 0.3)',
-  overlay: 'rgba(0, 0, 0, 0.6)',
+  // Shadow and overlay - Purple-tinted
+  shadow: 'rgba(139, 92, 246, 0.2)',
+  shadowMedium: 'rgba(139, 92, 246, 0.3)',
+  overlay: 'rgba(139, 92, 246, 0.7)',
   
-  // Accent colors for highlights
-  accent: '#f59e0b',
-  accentLight: '#fbbf24',
+  // Accent colors for highlights - More purple
+  accent: '#c084fc',
+  accentLight: '#ddd6fe',
 };
 
 // Helper function to get theme based on isDarkMode boolean

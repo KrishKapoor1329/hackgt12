@@ -10,11 +10,11 @@ import { lightTheme, darkTheme } from './Theme';
 // Modern Navigation Bar Component
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
   const navItems = [
-    { key: 'home', icon: '🏠', label: 'Home' },
-    { key: 'picks', icon: '🎯', label: 'Picks' },
-    { key: 'leaderboard', icon: '🏆', label: 'Leaderboard' },
-    { key: 'watchparties', icon: '📺', label: 'Watch' },
-    { key: 'settings', icon: '⚙️', label: 'Settings' },
+    { key: 'home', icon: '●', label: 'Home' },
+    { key: 'picks', icon: '◉', label: 'Picks' },
+    { key: 'leaderboard', icon: '♔', label: 'Leaderboard' },
+    { key: 'watchparties', icon: '▶', label: 'Watch' },
+    { key: 'settings', icon: '⚙', label: 'Settings' },
   ];
 
   return (
@@ -72,8 +72,10 @@ const HomeScreen = ({ theme, isDarkMode }) => {
       {/* Modern Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
-          <Text style={[styles.title, { color: theme.textPrimary }]}>PrizePicks</Text>
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>PickWise</Text>
         </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Your Ultimate Sports Betting Experience</Text>
       </View>
@@ -112,25 +114,25 @@ const HomeScreen = ({ theme, isDarkMode }) => {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Your Performance</Text>
           <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.primary + '15' }]}>
-                <Text style={[styles.statIconText, { color: theme.primary }]}>🎯</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.statIconText, { color: theme.primary }]}>●</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.textPrimary }]}>24</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>24</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Picks</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.success + '15' }]}>
-                <Text style={[styles.statIconText, { color: theme.success }]}>📈</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.statIconText, { color: theme.primary }]}>▲</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.success }]}>68%</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>68%</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Win Rate</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: theme.surface }]}>
-              <View style={[styles.statIcon, { backgroundColor: theme.accent + '15' }]}>
-                <Text style={[styles.statIconText, { color: theme.accent }]}>💰</Text>
+            <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
+              <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.statIconText, { color: theme.primary }]}>$</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.textPrimary }]}>$1,890</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>$1,890</Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Winnings</Text>
             </View>
           </View>
@@ -139,10 +141,10 @@ const HomeScreen = ({ theme, isDarkMode }) => {
         {/* Recent Activity */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Recent Activity</Text>
-          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
+          <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.primary + '20' }]}>
             <View style={styles.activityHeader}>
-              <View style={[styles.activityIcon, { backgroundColor: theme.primary + '15' }]}>
-                <Text style={[styles.activityIconText, { color: theme.primary }]}>⬆️</Text>
+              <View style={[styles.activityIcon, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.activityIconText, { color: theme.primary }]}>▲</Text>
               </View>
               <View style={styles.activityContent}>
                 <Text style={[styles.activityText, { color: theme.textPrimary }]}>You moved up 2 spots on the leaderboard!</Text>
@@ -150,10 +152,10 @@ const HomeScreen = ({ theme, isDarkMode }) => {
               </View>
             </View>
           </View>
-          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
+          <View style={[styles.activityCard, { backgroundColor: theme.surface, borderColor: theme.primary + '20' }]}>
             <View style={styles.activityHeader}>
-              <View style={[styles.activityIcon, { backgroundColor: theme.success + '15' }]}>
-                <Text style={[styles.activityIconText, { color: theme.success }]}>✅</Text>
+              <View style={[styles.activityIcon, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.activityIconText, { color: theme.primary }]}>✓</Text>
               </View>
               <View style={styles.activityContent}>
                 <Text style={[styles.activityText, { color: theme.textPrimary }]}>Your Ravens pick won!</Text>
@@ -274,6 +276,19 @@ const styles = StyleSheet.create({
     height: 32,
     marginRight: 12,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '800',
   },
   title: {
     fontSize: 32,
@@ -450,6 +465,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -488,6 +504,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

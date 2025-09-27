@@ -297,7 +297,9 @@ const WatchPartiesScreen = ({ onBack, onWatchPartySelect, theme, isDarkMode }) =
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Watch Parties</Text>
         </View>
         <TouchableOpacity onPress={createWatchParty} style={styles.createButton}>
@@ -309,7 +311,7 @@ const WatchPartiesScreen = ({ onBack, onWatchPartySelect, theme, isDarkMode }) =
       <View style={styles.filterContainer}>
         {[
           { key: 'all', label: 'All Parties', icon: '●' },
-          { key: 'friends', label: 'Friends', icon: '▲' },
+          { key: 'friends', label: 'Friends', icon: '◉' },
           { key: 'nearby', label: 'Nearby (2mi)', icon: '◆' },
         ].map((filter) => (
           <TouchableOpacity
@@ -502,6 +504,19 @@ const styles = StyleSheet.create({
     height: 24,
     marginRight: 8,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
   },
   title: {
     fontSize: 28,

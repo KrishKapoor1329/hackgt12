@@ -153,7 +153,9 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Leaderboard</Text>
         </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>NFL • {selectedFilter === 'all' ? 'All Time' : filters.find(f => f.key === selectedFilter)?.label}</Text>
@@ -196,15 +198,15 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
 
       {/* Stats Overview */}
       <View style={styles.statsOverview}>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
           <Text style={[styles.statValue, { color: theme.primary }]}>1,247</Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Players</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
           <Text style={[styles.statValue, { color: theme.primary }]}>$2.8K</Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Top Winnings</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
           <Text style={[styles.statValue, { color: theme.primary }]}>68.1%</Text>
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Best Win Rate</Text>
         </View>
@@ -300,6 +302,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
     resizeMode: 'contain',
   },
+  logoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
   title: {
     fontSize: 32,
     fontWeight: '800',
@@ -344,6 +359,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 4,
     alignItems: 'center',
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

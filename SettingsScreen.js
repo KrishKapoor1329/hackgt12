@@ -105,7 +105,9 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
       
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
         </View>
       </View>
@@ -215,7 +217,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
           {/* Twitter */}
           <View style={styles.socialItem}>
             <View style={styles.socialInfo}>
-              <Text style={styles.socialIcon}>🐦</Text>
+              <Text style={styles.socialIcon}>T</Text>
               <View style={styles.socialDetails}>
                 <Text style={[styles.socialName, { color: theme.textPrimary }]}>Twitter</Text>
                 <Text style={[styles.socialStatus, { color: theme.textSecondary }]}>
@@ -274,7 +276,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
           {/* Discord */}
           <View style={styles.socialItem}>
             <View style={styles.socialInfo}>
-              <Text style={styles.socialIcon}>💬</Text>
+              <Text style={styles.socialIcon}>D</Text>
               <View style={styles.socialDetails}>
                 <Text style={[styles.socialName, { color: theme.textPrimary }]}>Discord</Text>
                 <Text style={[styles.socialStatus, { color: theme.textSecondary }]}>
@@ -370,6 +372,19 @@ const styles = StyleSheet.create({
     height: 24,
     marginRight: 8,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
   },
   title: {
     fontSize: 28,
@@ -474,8 +489,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   socialIcon: {
-    fontSize: 24,
+    fontSize: 18,
+    fontWeight: '800',
     marginRight: 15,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#8b5cf6',
+    color: '#ffffff',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   socialDetails: {
     flex: 1,
