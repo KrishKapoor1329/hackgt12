@@ -15,18 +15,12 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
-
-// Safely import speech recognition with fallback
-let SpeechRecognition = null;
-try {
-  SpeechRecognition = require('expo-speech-recognition');
-} catch (error) {
-  console.warn('Speech recognition not available:', error);
-}
+import * as SpeechRecognition from 'expo-speech-recognition';
 
 const { width, height } = Dimensions.get('window');
 
 const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
+
   const [reactions, setReactions] = useState([
     { id: 1, user: 'Mike', reaction: 'TOUCHDOWN!', text: 'What a throw by Mahomes!', timestamp: Date.now() - 5000, intensity: 'high' },
     { id: 2, user: 'Sarah', reaction: 'DEFENSE!', text: 'Great defensive play!', timestamp: Date.now() - 3000, intensity: 'medium' },
@@ -38,19 +32,20 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
   const [betAmount, setBetAmount] = useState('');
   const [isGameDataExpanded, setIsGameDataExpanded] = useState(false);
   const [attendeesPositions, setAttendeesPositions] = useState({});
-  const [isListening, setIsListening] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [voiceMode, setVoiceMode] = useState('message'); // 'message' or 'bet'
   const [voiceInput, setVoiceInput] = useState('');
-  const [showVoiceConfirmation, setShowVoiceConfirmation] = useState(false);
   const [parsedBetCommand, setParsedBetCommand] = useState(null);
-  const [recognitionError, setRecognitionError] = useState(null);
-  const [isRecognitionSupported, setIsRecognitionSupported] = useState(false);
   const [animationsInitialized, setAnimationsInitialized] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [recognitionAvailable, setRecognitionAvailable] = useState(false);
+
   
   // Animation values for reactions
   const animatedValues = useRef({});
   const positionAnimations = useRef({});
-  const recording = useRef(null);
+  const sound = useRef(null);
 
   const attendees = [
     { id: 1, name: 'Mike Johnson', avatar: 'MJ' },
@@ -89,8 +84,34 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
   };
 
   useEffect(() => {
-    // Check speech recognition support
-    checkSpeechRecognitionSupport();
+    // Initialize text-to-speech
+    Speech.getAvailableVoicesAsync().then(voices => {
+      console.log('Available voices:', voices.length);
+    }).catch(error => {
+      console.log('Text-to-speech not available:', error);
+    });
+
+    // Setup audio mode
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    }).catch(error => {
+      console.log('Audio setup error:', error);
+    });
+
+    // Check if speech recognition is available
+    const checkSpeechRecognition = async () => {
+      try {
+        const available = await SpeechRecognition.getAvailableLanguagesAsync();
+        setRecognitionAvailable(available.length > 0);
+        console.log('Speech recognition available:', available.length > 0);
+      } catch (error) {
+        console.log('Speech recognition not available:', error);
+        setRecognitionAvailable(false);
+      }
+    };
+    
+    checkSpeechRecognition();
     
     // Initialize attendee positions
     const initialPositions = {};
@@ -128,6 +149,15 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
 
     return () => {
       clearInterval(reactionInterval);
+      
+      // Cleanup recording
+      if (recording.current) {
+        recording.current.stopAndUnloadAsync().catch(console.error);
+      }
+      if (recordingTimer.current) {
+        clearInterval(recordingTimer.current);
+      }
+      
       // Cleanup animations
       attendees.forEach(attendee => {
         if (animatedValues.current[attendee.id]) {
@@ -140,6 +170,20 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
       });
     };
   }, []);
+
+  // Handle transcript changes
+  useEffect(() => {
+    if (transcript && isListening) {
+      // Auto-stop after getting some text and user stops speaking
+      const timer = setTimeout(() => {
+        if (transcript.trim()) {
+          stopVoiceInput();
+        }
+      }, 2000); // Wait 2 seconds after last speech
+
+      return () => clearTimeout(timer);
+    }
+  }, [transcript, isListening, voiceMode]);
 
   useEffect(() => {
     // Animate reactions based on intensity with safety checks
@@ -254,126 +298,216 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
     }
   };
 
-  const checkSpeechRecognitionSupport = async () => {
+  const startVoiceInput = async (mode) => {
     try {
-      if (!SpeechRecognition) {
-        console.warn('Speech recognition module not available');
-        setIsRecognitionSupported(false);
-        return;
-      }
+      console.log('🎤 Starting live speech recognition...');
       
-      const isSupported = await SpeechRecognition.getAvailableVoiceRecognitionServicesAsync();
-      setIsRecognitionSupported(isSupported.length > 0);
-      
-      if (isSupported.length === 0) {
-        console.warn('Speech recognition not supported on this device');
-      }
-    } catch (error) {
-      console.error('Error checking speech recognition support:', error);
-      setIsRecognitionSupported(false);
-    }
-  };
-
-  const startListening = async (mode) => {
-    try {
-      setVoiceMode(mode);
-      setIsListening(true);
-      setVoiceInput('');
-      setRecognitionError(null);
-      
-      // Check if speech recognition is available
-      if (!SpeechRecognition || !isRecognitionSupported) {
-        Alert.alert(
-          'Speech Recognition Unavailable', 
-          'Speech recognition is not supported on this device. Please type your message instead.'
-        );
-        setIsListening(false);
-        return;
-      }
-
-      // Request microphone permissions
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please enable microphone access for voice commands');
-        setIsListening(false);
+      if (!recognitionAvailable) {
+        Alert.alert('Not Available', 'Speech recognition is not available on this device. Please type your message instead.');
+        setVoiceMode(mode);
+        setShowVoiceInput(true);
         return;
       }
 
       // Request speech recognition permissions
-      const speechStatus = await SpeechRecognition.requestPermissionsAsync();
-      if (speechStatus.status !== 'granted') {
-        Alert.alert('Permission needed', 'Please enable speech recognition permissions');
-        setIsListening(false);
+      const permissionResponse = await SpeechRecognition.requestPermissionsAsync();
+      if (!permissionResponse.granted) {
+        Alert.alert(
+          'Microphone Permission Required',
+          'Please allow microphone access to use voice input.',
+          [
+            { text: 'Cancel' },
+            { 
+              text: 'Type Instead', 
+              onPress: () => {
+                setVoiceMode(mode);
+                setShowVoiceInput(true);
+              }
+            }
+          ]
+        );
         return;
       }
 
-      // Start speech recognition
-      const recognitionOptions = {
+      setVoiceMode(mode);
+      setTranscript('');
+      setVoiceInput('');
+      setParsedBetCommand(null);
+      setIsListening(true);
+
+      // Configure speech recognition options
+      const options = {
         language: 'en-US',
         interimResults: true,
         maxAlternatives: 1,
-        continuous: false,
+        continuous: true,
         requiresOnDeviceRecognition: false,
       };
 
-      const result = await SpeechRecognition.start(recognitionOptions);
+      // Start speech recognition
+      await SpeechRecognition.start(options);
       
-      result.addEventListener('result', (event) => {
-        const transcript = event.results[0]?.transcript || '';
-        if (transcript) {
-          handleVoiceResult(transcript, mode);
+      // Set up result listeners
+      const resultListener = SpeechRecognition.addRecognitionResultListener((result) => {
+        console.log('🎯 Speech result received:', result);
+        if (result.transcription) {
+          setTranscript(result.transcription);
+          setVoiceInput(result.transcription);
+          
+          // Parse bet command if in bet mode
+          if (mode === 'bet') {
+            const parsed = parseBetCommand(result.transcription);
+            setParsedBetCommand(parsed);
+          }
         }
       });
 
-      result.addEventListener('error', (event) => {
-        console.error('Speech recognition error:', event.error);
-        setRecognitionError(event.error);
+      const errorListener = SpeechRecognition.addRecognitionErrorListener((error) => {
+        console.error('Speech recognition error:', error);
         setIsListening(false);
-        Alert.alert('Recognition Error', 'Could not understand speech. Please try again.');
+        Alert.alert('Recognition Error', 'Voice recognition failed. Please try again.');
       });
 
-      result.addEventListener('end', () => {
-        setIsListening(false);
-      });
+      // Show speech recognition UI
+      setShowVoiceInput(true);
 
-      // Stop listening after 10 seconds
+      // Show helpful message
+      const message = mode === 'bet' 
+        ? '🎤 Listening for Your Voice!\n\n� Say something like: "50 dollars on Chiefs win"\n� Speaking now - your words will appear as you talk\n🛑 Tap "Stop Listening" when done'
+        : '🎤 Listening for Your Voice!\n\n� Speak your message clearly\n🔴 Your words will appear as you talk\n🛑 Tap "Stop Listening" when done';
+      
       setTimeout(() => {
+        Alert.alert('🎙️ Voice Recognition Active', message, [{ text: 'Got it!' }]);
+      }, 500);
+
+      // Auto-stop after 30 seconds
+      setTimeout(async () => {
         if (isListening) {
-          SpeechRecognition.stop();
-          setIsListening(false);
+          await stopVoiceInput();
         }
-      }, 10000);
+        resultListener?.remove();
+        errorListener?.remove();
+      }, 30000);
 
     } catch (error) {
-      console.error('Error starting voice recognition:', error);
+      console.error('Failed to start speech recognition:', error);
+      Alert.alert(
+        'Speech Recognition Error',
+        'Failed to start voice recognition. Please try typing your message instead.',
+        [
+          { text: 'Cancel' },
+          { 
+            text: 'Type Instead', 
+            onPress: () => {
+              setVoiceMode(mode);
+              setShowVoiceInput(true);
+            }
+          }
+        ]
+      );
       setIsListening(false);
-      Alert.alert('Error', 'Failed to start voice recognition. Please try again.');
     }
   };
 
-  const handleVoiceResult = (transcript, mode) => {
-    setVoiceInput(transcript);
-    
-    if (mode === 'bet') {
-      const parsed = parseBetCommand(transcript);
-      setParsedBetCommand(parsed);
-    }
-    
-    setShowVoiceConfirmation(true);
-    setIsListening(false);
-  };
-
-  const stopListening = () => {
+  const stopVoiceInput = async () => {
     try {
-      if (SpeechRecognition) {
-        SpeechRecognition.stop();
-      }
+      console.log('🛑 Stopping speech recognition...');
       setIsListening(false);
+      
+      // Stop speech recognition
+      await SpeechRecognition.stop();
+      
+      console.log('✅ Speech recognition stopped');
+      
+      // Show completion message if we have transcript
+      if (transcript && transcript.trim()) {
+        Alert.alert(
+          '✅ Voice Input Complete', 
+          `Captured: "${transcript}"\n\nReview your message and send when ready.`,
+          [{ text: 'Review' }]
+        );
+      } else {
+        Alert.alert(
+          '⚠️ No Speech Detected', 
+          'No speech was captured. Please try again or type your message.',
+          [
+            { text: 'Try Again', onPress: () => startVoiceInput(voiceMode) },
+            { text: 'Type Instead' }
+          ]
+        );
+      }
     } catch (error) {
-      console.error('Error stopping speech recognition:', error);
+      console.error('Failed to stop speech recognition:', error);
+      Alert.alert('Error', 'Failed to stop voice recognition. Please try again.');
       setIsListening(false);
     }
   };
+
+
+
+
+
+  const confirmVoiceInput = () => {
+    const textToUse = transcript.trim() || voiceInput.trim();
+    if (!textToUse) {
+      Alert.alert('Empty Input', 'Please speak or type something before confirming.');
+      return;
+    }
+    
+    if (voiceMode === 'message') {
+      const comment = {
+        id: Date.now(),
+        user: 'You',
+        reaction: 'VOICE',
+        text: textToUse,
+        timestamp: Date.now(),
+        intensity: 'medium'
+      };
+      setReactions(prev => [comment, ...prev.slice(0, 9)]);
+      
+      // Text-to-speech announcement
+      Speech.speak(`Message sent: ${textToUse}`, { rate: 1.2 });
+    } else if (voiceMode === 'bet') {
+      // Use parsed bet command or parse again
+      const betCommand = parsedBetCommand || parseBetCommand(textToUse);
+      if (betCommand) {
+        setSelectedBet(betCommand.bet);
+        setBetAmount(betCommand.amount);
+        
+        // Text-to-speech announcement
+        Speech.speak(`Bet prepared: $${betCommand.amount} on ${betCommand.bet.option}`, { rate: 1.2 });
+      } else {
+        Alert.alert('Invalid Bet', 'Could not understand the bet command. Please try again.');
+        return;
+      }
+    }
+    
+    setShowVoiceInput(false);
+    setTranscript('');
+    setVoiceInput('');
+    setParsedBetCommand(null);
+  };
+
+  const cancelVoiceInput = async () => {
+    setShowVoiceInput(false);
+    setTranscript('');
+    setVoiceInput('');
+    setParsedBetCommand(null);
+    
+    // Stop speech recognition if active
+    if (isListening) {
+      try {
+        await SpeechRecognition.stop();
+        setIsListening(false);
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
+  };
+
+
+
+
 
   const parseBetCommand = (command) => {
     const lowerCommand = command.toLowerCase();
@@ -446,38 +580,7 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
     };
   };
 
-  const confirmVoiceAction = () => {
-    if (voiceMode === 'message') {
-      const comment = {
-        id: Date.now(),
-        user: 'You',
-        reaction: 'VOICE',
-        text: voiceInput,
-        timestamp: Date.now(),
-        intensity: 'medium'
-      };
-      setReactions(prev => [comment, ...prev.slice(0, 9)]);
-      
-      // Text-to-speech announcement
-      Speech.speak(`Message sent: ${voiceInput}`, { rate: 1.2 });
-    } else if (voiceMode === 'bet' && parsedBetCommand) {
-      setSelectedBet(parsedBetCommand.bet);
-      setBetAmount(parsedBetCommand.amount);
-      
-      // Text-to-speech announcement
-      Speech.speak(`Bet prepared: $${parsedBetCommand.amount} on ${parsedBetCommand.bet.option}`, { rate: 1.2 });
-    }
-    
-    setShowVoiceConfirmation(false);
-    setVoiceInput('');
-    setParsedBetCommand(null);
-  };
 
-  const cancelVoiceAction = () => {
-    setShowVoiceConfirmation(false);
-    setVoiceInput('');
-    setParsedBetCommand(null);
-  };
 
   const speakMessage = (message) => {
     Speech.speak(message, { rate: 1.1, pitch: 1.0 });
@@ -534,19 +637,13 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
         <View style={[styles.voiceControls, { backgroundColor: theme.surface }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-              🎤 {isRecognitionSupported ? 'Voice Commands' : 'Quick Actions'}
+            Voice Commands
             </Text>
             <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-              {isRecognitionSupported ? 'Speak to interact' : 'Tap to interact'}
+              Record audio messages and bets
             </Text>
           </View>
-          {!isRecognitionSupported && (
-            <View style={[styles.warningBanner, { backgroundColor: '#fef3c7' }]}>
-              <Text style={[styles.warningText, { color: '#92400e' }]}>
-                💬 Speech recognition not available - using text input mode
-              </Text>
-            </View>
-          )}
+
           <View style={styles.voiceButtonsRow}>
             {!isListening ? (
               <>
@@ -555,16 +652,14 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                     styles.voiceButton, 
                     styles.messageButton,
                     { 
-                      backgroundColor: isRecognitionSupported ? theme.primary : theme.border,
-                      opacity: isRecognitionSupported ? 1 : 0.6 
+                      backgroundColor: theme.primary
                     }
                   ]}
-                  onPress={() => startListening('message')}
-                  disabled={!isRecognitionSupported}
+                  onPress={() => startVoiceInput('message')}
                 >
                   <View style={styles.buttonContent}>
                     <Text style={styles.buttonIcon}>💬</Text>
-                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>Voice Message</Text>
+                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>💬 Quick Message</Text>
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity 
@@ -572,16 +667,14 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                     styles.voiceButton, 
                     styles.betButton,
                     { 
-                      backgroundColor: isRecognitionSupported ? '#ef4444' : theme.border,
-                      opacity: isRecognitionSupported ? 1 : 0.6 
+                      backgroundColor: '#ef4444'
                     }
                   ]}
-                  onPress={() => startListening('bet')}
-                  disabled={!isRecognitionSupported}
+                  onPress={() => startVoiceInput('bet')}
                 >
                   <View style={styles.buttonContent}>
                     <Text style={styles.buttonIcon}>💰</Text>
-                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>Voice Bet</Text>
+                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>💰 Quick Bet</Text>
                   </View>
                 </TouchableOpacity>
               </>
@@ -601,9 +694,17 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                     </Text>
                   </View>
                 </View>
+                <View style={styles.listeningStatus}>
+                  <Text style={[styles.listeningText, { color: theme.primary }]}>
+                    {transcript ? '🎯 Processing...' : '🎤 Listening...'}
+                  </Text>
+                  <Text style={[styles.listeningSubtext, { color: theme.textSecondary }]}>
+                    Speak clearly into your microphone
+                  </Text>
+                </View>
                 <TouchableOpacity 
                   style={[styles.stopButton, { backgroundColor: '#ef4444' }]}
-                  onPress={stopListening}
+                  onPress={stopVoiceInput}
                 >
                   <Text style={styles.stopButtonText}>⏹️ Stop Listening</Text>
                 </TouchableOpacity>
@@ -661,7 +762,7 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
           
           {/* Recent Comments with Speech Bubbles */}
           <View style={styles.commentsSection}>
-            <Text style={[styles.commentsTitle, { color: theme.textColor }]}>Recent Comments</Text>
+            <Text style={[styles.commentsTitle, { color: theme.textPrimary }]}>Recent Comments</Text>
             <ScrollView style={styles.commentsScroll} showsVerticalScrollIndicator={false}>
               {reactions.slice(0, 3).map((reaction, index) => (
                 <TouchableOpacity 
@@ -675,7 +776,7 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                     </Text>
                     <Text style={[styles.speakIcon, { color: theme.secondaryText }]}>🔊</Text>
                   </View>
-                  <Text style={[styles.commentText, { color: theme.textColor }]}>
+                  <Text style={[styles.commentText, { color: theme.textPrimary }]}>
                     {reaction.text}
                   </Text>
                 </TouchableOpacity>
@@ -737,7 +838,7 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
               >
                 <Text style={[
                   styles.enhancedBetOptionText,
-                  { color: selectedBet?.id === bet.id ? '#fff' : theme.textColor }
+                  { color: selectedBet?.id === bet.id ? '#fff' : theme.textPrimary }
                 ]}>
                   {bet.option}
                 </Text>
@@ -756,12 +857,12 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
               <Text style={[styles.selectedBetTitle, { color: theme.primary }]}>
                 🎯 SELECTED BET
               </Text>
-              <Text style={[styles.selectedBetText, { color: theme.textColor }]}>
+              <Text style={[styles.selectedBetText, { color: theme.textPrimary }]}>
                 {selectedBet.option}
               </Text>
               <View style={styles.betInputRow}>
                 <TextInput
-                  style={[styles.enhancedBetInput, { backgroundColor: theme.cardBackground, color: theme.textColor, borderColor: theme.primary }]}
+                  style={[styles.enhancedBetInput, { backgroundColor: theme.cardBackground, color: theme.textPrimary, borderColor: theme.primary }]}
                   value={betAmount}
                   onChangeText={setBetAmount}
                   placeholder="Enter bet amount ($)"
@@ -864,16 +965,61 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
         )}
       </ScrollView>
 
-      {/* Voice Confirmation Modal */}
-      {showVoiceConfirmation && (
+      {/* Voice Input Modal */}
+      {showVoiceInput && (
         <View style={styles.voiceModal}>
           <View style={[styles.voiceModalContent, { backgroundColor: theme.cardBackground }]}>
-            <Text style={[styles.voiceModalTitle, { color: theme.textColor }]}>
-              {voiceMode === 'message' ? '💬 Confirm Message' : '💰 Confirm Bet'}
+            <Text style={[styles.voiceModalTitle, { color: theme.textPrimary }]}>
+              {voiceMode === 'message' ? '💬 Confirm Voice Message' : '💰 Confirm Voice Bet'}
             </Text>
-            <Text style={[styles.voiceInputDisplay, { color: theme.primary }]}>
-              "{voiceInput}"
-            </Text>
+            
+            {isListening && (
+              <View style={styles.recordingIndicator}>
+                <Text style={[styles.recordingText, { color: '#ef4444' }]}>
+                  🎤 Listening... Speak now!
+                </Text>
+                <Text style={[styles.recordingSubtext, { color: theme.textSecondary }]}>
+                  Your words will appear as you speak
+                </Text>
+              </View>
+            )}
+            
+            {transcript && !isListening && (
+              <View style={styles.transcriptContainer}>
+                <Text style={[styles.transcriptLabel, { color: theme.textSecondary }]}>
+                  Transcribed:
+                </Text>
+                <Text style={[styles.transcriptText, { color: theme.textPrimary }]}>
+                  "{transcript}"
+                </Text>
+
+              </View>
+            )}
+            
+            {!isListening && (
+              <TextInput
+                style={[styles.voiceTextInput, { 
+                  borderColor: theme.border, 
+                  backgroundColor: theme.inputBackground,
+                  color: theme.textPrimary 
+                }]}
+                placeholder={transcript ? 'Edit the text above or type here...' : (voiceMode === 'message' ? 'Type your message...' : 'Type your bet command...')}
+                placeholderTextColor={theme.textSecondary}
+                value={voiceInput}
+                onChangeText={(text) => {
+                  setVoiceInput(text);
+                  if (voiceMode === 'bet' && text.trim()) {
+                    const parsed = parseBetCommand(text);
+                    setParsedBetCommand(parsed);
+                  } else if (voiceMode === 'bet') {
+                    setParsedBetCommand(null);
+                  }
+                }}
+                multiline={voiceMode === 'message'}
+                numberOfLines={voiceMode === 'message' ? 3 : 1}
+                autoFocus={!transcript}
+              />
+            )}
             {parsedBetCommand && (
               <View style={styles.betPreview}>
                 <View style={styles.confidenceIndicator}>
@@ -886,13 +1032,13 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                 <Text style={[styles.betPreviewLabel, { color: theme.textSecondary }]}>
                   Parsed Command:
                 </Text>
-                <Text style={[styles.betPreviewText, { color: theme.textColor }]}>
+                <Text style={[styles.betPreviewText, { color: theme.textPrimary }]}>
                   Amount: ${parsedBetCommand.amount}
                 </Text>
-                <Text style={[styles.betPreviewText, { color: theme.textColor }]}>
+                <Text style={[styles.betPreviewText, { color: theme.textPrimary }]}>
                   Bet: {parsedBetCommand.bet.option}
                 </Text>
-                <Text style={[styles.betPreviewText, { color: theme.textColor }]}>
+                <Text style={[styles.betPreviewText, { color: theme.textPrimary }]}>
                   Odds: {parsedBetCommand.bet.odds}
                 </Text>
               </View>
@@ -900,16 +1046,26 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
             <View style={styles.voiceModalButtons}>
               <TouchableOpacity 
                 style={[styles.voiceModalButton, { backgroundColor: '#ef4444' }]}
-                onPress={cancelVoiceAction}
+                onPress={cancelVoiceInput}
               >
                 <Text style={styles.voiceModalButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.voiceModalButton, { backgroundColor: theme.primary }]}
-                onPress={confirmVoiceAction}
-              >
-                <Text style={styles.voiceModalButtonText}>Confirm</Text>
-              </TouchableOpacity>
+              {!isListening && (transcript.trim() || voiceInput.trim()) && (
+                <TouchableOpacity 
+                  style={[styles.voiceModalButton, { backgroundColor: theme.primary }]}
+                  onPress={confirmVoiceInput}
+                >
+                  <Text style={styles.voiceModalButtonText}>Confirm</Text>
+                </TouchableOpacity>
+              )}
+              {isListening && (
+                <TouchableOpacity 
+                  style={[styles.voiceModalButton, { backgroundColor: '#ef4444' }]}
+                  onPress={stopVoiceInput}
+                >
+                  <Text style={styles.voiceModalButtonText}>🛑 Stop Listening</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -1096,6 +1252,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 16,
   },
+  voiceTextInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    marginBottom: 20,
+    minHeight: 50,
+    textAlignVertical: 'top',
+    width: '100%',
+  },
   betPreview: {
     backgroundColor: 'rgba(139, 92, 246, 0.1)',
     borderRadius: 12,
@@ -1199,6 +1365,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  listeningStatus: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  listeningText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  listeningSubtext: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 
   // Enhanced Reactions Area
@@ -1660,6 +1841,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  
+  // Voice recognition styles
+  listeningIndicator: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+    marginBottom: 16,
+  },
+  listeningText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  transcriptContainer: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+    marginBottom: 16,
+  },
+  transcriptLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  transcriptText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  listeningIndicator: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderWidth: 2,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  listeningText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  voiceTextInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    minHeight: 50,
+    textAlignVertical: 'top',
+  },
+  recordingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ff4444',
+    borderRadius: 20,
+    padding: 10,
+    marginTop: 10,
+  },
+  recordingText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 5,
   },
 });
 
