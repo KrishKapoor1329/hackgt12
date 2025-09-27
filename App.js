@@ -1,34 +1,85 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useState } from 'react';
+import SettingsScreen from './SettingsScreen';
+import { lightTheme, darkTheme } from './Theme';
 
 export default function App() {
+  const [currentScreen, setCurrentScreen] = useState('home');
   const [count, setCount] = useState(0);
 
+  // add dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const theme = isDarkMode ? darkTheme : lightTheme;
+
+  if (currentScreen === 'settings') {
+    return (
+      <SettingsScreen 
+        navigation={{ goBack: () => setCurrentScreen('home') }} 
+        theme={theme}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      />
+    );
+  }
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome to HackGT12! 🚀</Text>
-        <Text style={styles.subtitle}>Your Expo React Native App</Text>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>PrizePicks 🏆</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Your Ultimate Sports Betting Experience</Text>
+        <TouchableOpacity 
+          style={[styles.settingsButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          onPress={() => setCurrentScreen('settings')}
+        >
+          <Text style={styles.settingsButtonText}>⚙️</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Counter Demo</Text>
-          <Text style={styles.counterText}>{count}</Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        
+        <View style={styles.featuresContainer}>
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={styles.featureIcon}>🔥</Text>
+            <Text style={[styles.featureTitle, { color: theme.textPrimary }]}>Get Hyped</Text>
+            <Text style={[styles.featureDescription, { color: theme.textSecondary }]}>Join the excitement with live game updates and community hype</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={styles.featureIcon}>👥</Text>
+            <Text style={[styles.featureTitle, { color: theme.textPrimary }]}>Find Friends</Text>
+            <Text style={[styles.featureDescription, { color: theme.textSecondary }]}>Connect with friends and discover people in your area</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={styles.featureIcon}>🎯</Text>
+            <Text style={[styles.featureTitle, { color: theme.textPrimary }]}>Make Picks</Text>
+            <Text style={[styles.featureDescription, { color: theme.textSecondary }]}>Place your bets and compete with friends</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.featureCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={styles.featureIcon}>📺</Text>
+            <Text style={[styles.featureTitle, { color: theme.textPrimary }]}>Watch Parties</Text>
+            <Text style={[styles.featureDescription, { color: theme.textSecondary }]}>Join virtual watch parties and cheer together</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Demo Counter */}
+        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Demo Counter</Text>
+          <Text style={[styles.counterText, { color: theme.primary }]}>{count}</Text>
           
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[styles.button, styles.incrementButton]} 
+              style={[styles.button, { backgroundColor: theme.success }]} 
               onPress={() => setCount(count + 1)}
             >
               <Text style={styles.buttonText}>+</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.button, styles.decrementButton]} 
+              style={[styles.button, { backgroundColor: theme.error }]} 
               onPress={() => setCount(count - 1)}
             >
               <Text style={styles.buttonText}>-</Text>
@@ -36,16 +87,27 @@ export default function App() {
           </View>
           
           <TouchableOpacity 
-            style={[styles.button, styles.resetButton]} 
+            style={[styles.button, { backgroundColor: theme.primary }]} 
             onPress={() => setCount(0)}
           >
             <Text style={styles.buttonText}>Reset</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Built with ❤️ using Expo</Text>
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.quickActionText, { color: theme.textPrimary }]}>🏈 NFL Games</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.quickActionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.quickActionText, { color: theme.textPrimary }]}>👥 Find Friends</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <Text style={[styles.footerText, { color: theme.textSecondary }]}>Built for HackGT12 🚀</Text>
       </View>
     </SafeAreaView>
   );
@@ -54,35 +116,79 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
   },
   header: {
     alignItems: 'center',
     paddingTop: 40,
     paddingBottom: 30,
+    position: 'relative',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#f8fafc',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94a3b8',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    borderRadius: 20,
+    padding: 10,
+    borderWidth: 1,
+  },
+  settingsButtonText: {
+    fontSize: 20,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  featuresContainer: {
+    marginBottom: 30,
+  },
+  featureCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  featureIcon: {
+    fontSize: 24,
+    marginBottom: 10,
+  },
+  featureTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#f8fafc',
+    marginBottom: 5,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: '#94a3b8',
+    lineHeight: 20,
   },
   card: {
     backgroundColor: '#1e293b',
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
+    marginBottom: 30,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -141,9 +247,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 30,
+  },
+  quickActionButton: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  quickActionText: {
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   footer: {
     alignItems: 'center',
     paddingBottom: 40,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#1e293b',
   },
   footerText: {
     color: '#64748b',
