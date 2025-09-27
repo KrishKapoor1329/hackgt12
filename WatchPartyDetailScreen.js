@@ -503,32 +503,49 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={theme.statusBarStyle} />
       
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => onBack()}
-        >
-          <Text style={[styles.backButtonText, { color: theme.primary }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{watchParty.title}</Text>
-        <View style={styles.headerRight}>
-          <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
-            {attendees.length} members
-          </Text>
+      {/* Enhanced Header with Gradient */}
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
+        <View style={styles.headerGradient}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => onBack()}
+          >
+            <Text style={[styles.backButtonText, { color: theme.textInverse }]}>← Back</Text>
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={[styles.headerTitle, { color: theme.textInverse }]}>{watchParty.title}</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={[styles.liveText, { color: theme.textInverse }]}>LIVE</Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <View style={[styles.memberBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Text style={[styles.memberCount, { color: theme.textInverse }]}>
+                👥 {attendees.length}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Voice Controls */}
-        <View style={[styles.voiceControls, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-          <Text style={[styles.sectionTitle, { color: theme.textColor }]}>
-            {isRecognitionSupported ? 'Voice Commands' : 'Quick Actions'}
-          </Text>
-          {!isRecognitionSupported && (
-            <Text style={[styles.errorText, { color: '#fbbf24' }]}>
-              💬 Speech recognition not available - using text input mode
+        {/* Enhanced Voice Controls */}
+        <View style={[styles.voiceControls, { backgroundColor: theme.surface }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+              🎤 {isRecognitionSupported ? 'Voice Commands' : 'Quick Actions'}
             </Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+              {isRecognitionSupported ? 'Speak to interact' : 'Tap to interact'}
+            </Text>
+          </View>
+          {!isRecognitionSupported && (
+            <View style={[styles.warningBanner, { backgroundColor: '#fef3c7' }]}>
+              <Text style={[styles.warningText, { color: '#92400e' }]}>
+                💬 Speech recognition not available - using text input mode
+              </Text>
+            </View>
           )}
           <View style={styles.voiceButtonsRow}>
             {!isListening ? (
@@ -536,54 +553,71 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
                 <TouchableOpacity 
                   style={[
                     styles.voiceButton, 
+                    styles.messageButton,
                     { 
-                      backgroundColor: isRecognitionSupported ? theme.primary : '#94a3b8',
+                      backgroundColor: isRecognitionSupported ? theme.primary : theme.border,
                       opacity: isRecognitionSupported ? 1 : 0.6 
                     }
                   ]}
                   onPress={() => startListening('message')}
                   disabled={!isRecognitionSupported}
                 >
-                  <Text style={styles.voiceButtonText}>💬 Voice Message</Text>
+                  <View style={styles.buttonContent}>
+                    <Text style={styles.buttonIcon}>💬</Text>
+                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>Voice Message</Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[
                     styles.voiceButton, 
+                    styles.betButton,
                     { 
-                      backgroundColor: isRecognitionSupported ? '#ff6b6b' : '#94a3b8',
+                      backgroundColor: isRecognitionSupported ? '#ef4444' : theme.border,
                       opacity: isRecognitionSupported ? 1 : 0.6 
                     }
                   ]}
                   onPress={() => startListening('bet')}
                   disabled={!isRecognitionSupported}
                 >
-                  <Text style={styles.voiceButtonText}>💰 Voice Bet</Text>
+                  <View style={styles.buttonContent}>
+                    <Text style={styles.buttonIcon}>💰</Text>
+                    <Text style={[styles.voiceButtonText, { color: theme.textInverse }]}>Voice Bet</Text>
+                  </View>
                 </TouchableOpacity>
               </>
             ) : (
               <View style={styles.listeningContainer}>
-                <View style={[styles.listeningIndicator, { backgroundColor: '#ef4444' }]}>
-                  <Text style={styles.listeningText}>
-                    🎤 Listening for {voiceMode === 'message' ? 'message' : 'bet'}...
-                  </Text>
-                  <Text style={[styles.listeningSubtext, { color: theme.textSecondary }]}>
-                    Speak now or tap to stop
-                  </Text>
+                <View style={[styles.listeningIndicator, { backgroundColor: theme.primary }]}>
+                  <View style={styles.listeningContent}>
+                    <View style={styles.pulseContainer}>
+                      <View style={[styles.pulseRing, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
+                      <Text style={styles.microphoneIcon}>🎤</Text>
+                    </View>
+                    <Text style={[styles.listeningText, { color: theme.textInverse }]}>
+                      Listening for {voiceMode === 'message' ? 'message' : 'bet'}...
+                    </Text>
+                    <Text style={[styles.listeningSubtext, { color: 'rgba(255,255,255,0.8)' }]}>
+                      Speak clearly or tap to stop
+                    </Text>
+                  </View>
                 </View>
                 <TouchableOpacity 
                   style={[styles.stopButton, { backgroundColor: '#ef4444' }]}
                   onPress={stopListening}
                 >
-                  <Text style={styles.stopButtonText}>⏹️ Stop</Text>
+                  <Text style={styles.stopButtonText}>⏹️ Stop Listening</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         </View>
 
-        {/* Reactions Area with Bubble Comments */}
-        <View style={[styles.reactionsArea, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
-          <Text style={[styles.sectionTitle, { color: theme.textColor }]}>Live Watch Party</Text>
+        {/* Enhanced Reactions Area */}
+        <View style={[styles.reactionsArea, { backgroundColor: theme.surface }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🎉 Live Watch Party</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>Watch reactions in real-time</Text>
+          </View>
           
           {/* Roaming Attendees */}
           <View style={styles.roamingContainer}>
@@ -668,11 +702,23 @@ const WatchPartyDetailScreen = ({ watchParty, theme, onBack }) => {
           </View>
         </View>
 
-        {/* LIVE BETTING SECTION - ENHANCED AND PROMINENT */}
-        <View style={[styles.bettingSection, { backgroundColor: theme.cardBackground, borderColor: theme.primary }]}>
-          <View style={styles.bettingHeader}>
-            <Text style={[styles.bettingSectionTitle, { color: theme.primary }]}>🚀 LIVE BETTING</Text>
-            <Text style={[styles.bettingSubtitle, { color: theme.textColor }]}>Place your bets in real-time</Text>
+        {/* ENHANCED LIVE BETTING SECTION */}
+        <View style={[styles.bettingSection, { backgroundColor: theme.surface }]}>
+          <View style={[styles.bettingHeader, { backgroundColor: theme.primary }]}>
+            <View style={styles.bettingHeaderContent}>
+              <Text style={[styles.bettingSectionTitle, { color: theme.textInverse }]}>🚀 LIVE BETTING</Text>
+              <Text style={[styles.bettingSubtitle, { color: 'rgba(255,255,255,0.9)' }]}>Place your bets in real-time</Text>
+              <View style={styles.betStatsRow}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: theme.textInverse }]}>$2.4K</Text>
+                  <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Volume</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statValue, { color: theme.textInverse }]}>12</Text>
+                  <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Active Bets</Text>
+                </View>
+              </View>
+            </View>
           </View>
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bettingOptions}>
@@ -877,12 +923,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    paddingTop: 20,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    marginRight: 4,
+  },
+  liveText: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  memberBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   backButton: {
     paddingVertical: 8,
@@ -909,20 +990,45 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  sectionHeader: {
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  warningBanner: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  warningText: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 
   // Voice Controls
   voiceControls: {
     marginTop: 20,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    marginBottom: 10,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   voiceButtonsRow: {
     flexDirection: 'row',
@@ -931,15 +1037,35 @@ const styles = StyleSheet.create({
   },
   voiceButton: {
     flex: 0.48,
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  messageButton: {
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
+  betButton: {
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  buttonContent: {
+    alignItems: 'center',
+  },
+  buttonIcon: {
+    fontSize: 24,
+    marginBottom: 4,
   },
   voiceButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   voiceModal: {
     position: 'absolute',
@@ -1025,11 +1151,34 @@ const styles = StyleSheet.create({
   },
   listeningIndicator: {
     width: '100%',
-    paddingVertical: 16,
+    paddingVertical: 20,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  listeningContent: {
+    alignItems: 'center',
+  },
+  pulseContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    opacity: 0.6,
+  },
+  microphoneIcon: {
+    fontSize: 32,
   },
   listeningText: {
     color: '#fff',
@@ -1052,39 +1201,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Reactions Area
+  // Enhanced Reactions Area
   reactionsArea: {
-    marginTop: 10,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    height: 320,
+    marginTop: 16,
+    borderRadius: 20,
+    padding: 20,
+    height: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   roamingContainer: {
     height: 160,
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderRadius: 16,
+    marginHorizontal: -4,
+    paddingHorizontal: 4,
   },
   roamingAttendee: {
     position: 'absolute',
     left: 0,
     top: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   attendeeInitial: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
+
   speechBubble: {
     position: 'absolute',
     left: 45,
@@ -1138,11 +1301,53 @@ const styles = StyleSheet.create({
     maxHeight: 80,
   },
   commentBubble: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    position: 'relative',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  userInitial: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  speakButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reactionIntensity: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  intensityText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '700',
   },
   commentHeader: {
     flexDirection: 'row',
@@ -1186,25 +1391,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Betting Section - Enhanced and Larger
+  // Enhanced Betting Section
   bettingSection: {
-    marginTop: 20,
-    borderRadius: 20,
+    marginTop: 24,
+    borderRadius: 24,
     padding: 24,
-    borderWidth: 2,
     shadowColor: '#8b5cf6',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 12,
-    minHeight: 220,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 16,
+    minHeight: 260,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.1)',
   },
   bettingHeader: {
-    marginBottom: 20,
+    marginBottom: 0,
+    borderRadius: 20,
+    marginHorizontal: -24,
+    marginTop: -24,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  bettingHeaderContent: {
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+  betStatsRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 32,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.9,
+    marginTop: 2,
   },
   bettingSectionTitle: {
     fontSize: 24,
