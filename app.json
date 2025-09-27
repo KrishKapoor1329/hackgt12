@@ -13,14 +13,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses location to show you leaderboards for your city and connect you with nearby players."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,9 +35,15 @@
     "extra": {
       "SUPABASE_URL": "https://ezzwqntqsoybedqjtfyy.supabase.co",
       "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6endxbnRxc295YmVkcWp0Znl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5ODEwMzksImV4cCI6MjA3NDU1NzAzOX0.-boF6CwXlZ-cTAotUs3VhyFqOZ-1EYJsh1b60fFkN9I"
-    }
+    },
     "plugins": [
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app uses location to show you leaderboards for your city and connect you with nearby players."
+        }
+      ]
     ]
   }
 }

@@ -9,6 +9,7 @@ import WatchPartyDetailScreen from './WatchPartyDetailScreen';
 import { lightTheme, darkTheme } from './Theme';
 import AuthScreen from './AuthScreen';
 import supabase from './supabaseClient';
+import LocationService from './LocationService';
 
 // Modern Navigation Bar Component
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
@@ -68,7 +69,7 @@ const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
 };
 
 // Modern Home Screen Component
-const HomeScreen = ({ theme, isDarkMode }) => {
+const HomeScreen = ({ theme, isDarkMode, userStats }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
@@ -122,21 +123,27 @@ const HomeScreen = ({ theme, isDarkMode }) => {
               <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
                 <Text style={[styles.statIconText, { color: theme.primary }]}>●</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>24</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>
+                {userStats?.totalPicks || 0}
+              </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Picks</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
               <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
                 <Text style={[styles.statIconText, { color: theme.primary }]}>▲</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>68%</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>
+                {userStats?.winRate ? `${userStats.winRate.toFixed(1)}%` : '0%'}
+              </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Win Rate</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.primary + '30' }]}>
               <View style={[styles.statIcon, { backgroundColor: theme.primary + '25' }]}>
                 <Text style={[styles.statIconText, { color: theme.primary }]}>$</Text>
               </View>
-              <Text style={[styles.statValue, { color: theme.primary }]}>$1,890</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>
+                ${userStats?.totalWinnings ? userStats.totalWinnings.toLocaleString() : '0'}
+              </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Winnings</Text>
             </View>
           </View>
@@ -192,20 +199,151 @@ const PicksScreen = ({ theme, isDarkMode }) => {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(true);
-export default function YourComponent() {
   const [session, setSession] = useState(null);
   const [selectedWatchParty, setSelectedWatchParty] = useState(null);
+  const [userStats, setUserStats] = useState({
+    totalPicks: 0,
+    correctPicks: 0,
+    winRate: 0,
+    totalWinnings: 0,
+    currentStreak: 0,
+    bestStreak: 0
+  });
+  const [userLocation, setUserLocation] = useState({
+    city: null,
+    state: null,
+    country: null,
+    displayName: null,
+    isLoading: true
+  });
   const theme = isDarkMode ? darkTheme : lightTheme;
+
+  // Detect and update user location
+  const detectAndUpdateUserLocation = async (userId) => {
+    try {
+      setUserLocation(prev => ({ ...prev, isLoading: true }));
+
+      // First, try to get existing location from database
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('city, state, country')
+        .eq('id', userId)
+        .single();
+
+      // If user already has a city set and it's not "Unknown City", use it
+      if (existingProfile?.city && existingProfile.city !== 'Unknown City') {
+        setUserLocation({
+          city: existingProfile.city,
+          state: existingProfile.state,
+          country: existingProfile.country,
+          displayName: `${existingProfile.city}${existingProfile.state ? ', ' + existingProfile.state : ''}`,
+          isLoading: false
+        });
+        return;
+      }
+
+      // Detect current location
+      const locationInfo = await LocationService.getLocationWithFallback();
+      
+      if (locationInfo) {
+        const formattedLocation = LocationService.formatCityForDatabase(locationInfo);
+        
+        // Update user profile with detected location
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            city: formattedLocation.city,
+            state: formattedLocation.state,
+            country: formattedLocation.country
+          })
+          .eq('id', userId);
+
+        if (!error) {
+          setUserLocation({
+            city: formattedLocation.city,
+            state: formattedLocation.state,
+            country: formattedLocation.country,
+            displayName: formattedLocation.displayName,
+            isLoading: false
+          });
+        } else {
+          console.error('Error updating user location:', error);
+          setUserLocation(prev => ({ ...prev, isLoading: false }));
+        }
+      } else {
+        // Fallback to a default city or keep existing
+        setUserLocation({
+          city: existingProfile?.city || 'Atlanta', // Default fallback
+          state: existingProfile?.state || 'GA',
+          country: existingProfile?.country || 'US',
+          displayName: existingProfile?.city ? `${existingProfile.city}${existingProfile.state ? ', ' + existingProfile.state : ''}` : 'Atlanta, GA',
+          isLoading: false
+        });
+      }
+    } catch (error) {
+      console.error('Error detecting user location:', error);
+      setUserLocation({
+        city: 'Atlanta', // Default fallback
+        state: 'GA',
+        country: 'US',
+        displayName: 'Atlanta, GA',
+        isLoading: false
+      });
+    }
+  };
+
+  // Load user stats from Supabase
+  const loadUserStats = async (userId) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('total_picks, correct_picks, win_rate, total_winnings, current_streak, best_streak')
+        .eq('id', userId)
+        .single();
+
+      if (profile) {
+        setUserStats({
+          totalPicks: profile.total_picks || 0,
+          correctPicks: profile.correct_picks || 0,
+          winRate: profile.win_rate || 0,
+          totalWinnings: profile.total_winnings || 0,
+          currentStreak: profile.current_streak || 0,
+          bestStreak: profile.best_streak || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user stats:', error);
+      // Set sample data for development if no profile exists
+      setUserStats({
+        totalPicks: 38,
+        correctPicks: 24,
+        winRate: 63.2,
+        totalWinnings: 1890,
+        currentStreak: 3,
+        bestStreak: 8
+      });
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       const { data } = await supabase.auth.getSession();
-      if (mounted) setSession(data.session);
+      if (mounted) {
+        setSession(data.session);
+        if (data.session?.user) {
+          loadUserStats(data.session.user.id);
+          detectAndUpdateUserLocation(data.session.user.id);
+        }
+      }
     })();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (newSession?.user) setCurrentScreen('home');
+      if (newSession?.user) {
+        setCurrentScreen('home');
+        loadUserStats(newSession.user.id);
+        detectAndUpdateUserLocation(newSession.user.id);
+      }
     });
     return () => {
       mounted = false;
@@ -238,6 +376,9 @@ export default function YourComponent() {
             onBack={() => setCurrentScreen('home')}
             theme={theme}
             isDarkMode={isDarkMode}
+            userStats={userStats}
+            session={session}
+            userLocation={userLocation}
           />
         );
       case 'watchparties':
@@ -267,7 +408,7 @@ export default function YourComponent() {
       case 'picks':
         return <PicksScreen theme={theme} isDarkMode={isDarkMode} />;
       default:
-        return <HomeScreen theme={theme} isDarkMode={isDarkMode} />;
+        return <HomeScreen theme={theme} isDarkMode={isDarkMode} userStats={userStats} />;
     }
   };
 

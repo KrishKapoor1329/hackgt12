@@ -43,18 +43,7 @@ const mockLeaderboardData = [
     rank: 2,
     isCurrentUser: false,
   },
-  {
-    id: 3,
-    username: 'You',
-    avatar: 'ME',
-    totalPicks: 38,
-    correctPicks: 24,
-    winRate: 63.2,
-    totalWinnings: 1890,
-    streak: 3,
-    rank: 3,
-    isCurrentUser: true,
-  },
+  // Current user data will be dynamically inserted
   {
     id: 4,
     username: 'EndZoneExpert',
@@ -117,7 +106,7 @@ const mockLeaderboardData = [
   },
 ];
 
-const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
+const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, userLocation }) => {
   const [selectedTab, setSelectedTab] = useState('city'); // city, groups
   const [selectedLeague, setSelectedLeague] = useState('NFL'); // NFL, NBA
   const [cityLeaderboard, setCityLeaderboard] = useState([]);
@@ -127,6 +116,43 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
   const [userCity, setUserCity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+
+  // Helper function to create current user leaderboard entry
+  const getCurrentUserEntry = () => {
+    if (!userStats || !session?.user) return null;
+    
+    return {
+      id: session.user.id,
+      username: 'You',
+      avatar: 'ME',
+      totalPicks: userStats.totalPicks,
+      correctPicks: userStats.correctPicks,
+      winRate: userStats.winRate,
+      totalWinnings: userStats.totalWinnings,
+      streak: userStats.currentStreak,
+      rank: 0, // Will be calculated based on position
+      isCurrentUser: true,
+    };
+  };
+
+  // Helper function to merge current user into leaderboard and sort
+  const mergeUserIntoLeaderboard = (leaderboardData) => {
+    const currentUser = getCurrentUserEntry();
+    if (!currentUser) return leaderboardData;
+
+    // Remove any existing current user entries and add the real one
+    const filteredData = leaderboardData.filter(user => !user.isCurrentUser);
+    const allUsers = [...filteredData, currentUser];
+    
+    // Sort by total winnings (descending)
+    const sortedUsers = allUsers.sort((a, b) => b.totalWinnings - a.totalWinnings);
+    
+    // Update ranks
+    return sortedUsers.map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+  };
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -153,7 +179,16 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
     } else if (selectedGroup) {
       loadGroupLeaderboard();
     }
-  }, [selectedTab, selectedGroup]);
+  }, [selectedTab, selectedGroup, userLocation?.city]);
+
+  // Update leaderboard when userStats change
+  useEffect(() => {
+    if (userStats && selectedTab === 'city' && cityLeaderboard.length > 0) {
+      setCityLeaderboard(prevLeaderboard => mergeUserIntoLeaderboard(
+        prevLeaderboard.filter(user => !user.isCurrentUser)
+      ));
+    }
+  }, [userStats]);
 
   const loadUserProfile = async () => {
     try {
@@ -182,24 +217,35 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       const uid = sessionData?.session?.user?.id;
       if (!uid) return;
 
-      // Get user's city first
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('city')
-        .eq('id', uid)
-        .single();
+      // Use the detected user location first, fallback to database
+      let userCity = userLocation?.city;
+      
+      if (!userCity || userLocation?.isLoading) {
+        // Fallback: Get user's city from database
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('city')
+          .eq('id', uid)
+          .single();
+        
+        userCity = userProfile?.city;
+      }
 
-      if (!userProfile?.city) {
-        // Use mock data if no city set
-        setCityLeaderboard(mockLeaderboardData);
+      if (!userCity || userCity === 'Unknown City') {
+        // Use mock data if no city available
+        setCityLeaderboard(mergeUserIntoLeaderboard(mockLeaderboardData));
+        setUserCity(userLocation?.displayName || 'Unknown City');
         return;
       }
 
-      // Get city leaderboard
+      // Update the displayed city name
+      setUserCity(userLocation?.displayName || userCity);
+
+      // Get city leaderboard using detected city
       const { data: cityData } = await supabase
         .from('profiles')
         .select('id, username, email, total_winnings, total_picks, correct_picks, win_rate, current_streak, best_streak')
-        .eq('city', userProfile.city)
+        .eq('city', userCity)
         .order('total_winnings', { ascending: false })
         .limit(50);
 
@@ -219,7 +265,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       setCityLeaderboard(leaderboardData);
     } catch (error) {
       console.error('Error loading city leaderboard:', error);
-      setCityLeaderboard(mockLeaderboardData);
+      setCityLeaderboard(mergeUserIntoLeaderboard(mockLeaderboardData));
     } finally {
       setLoading(false);
     }
@@ -236,7 +282,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
         .from('group_members')
         .select(`
           group_id,
-          friend_groups(id, name, description, owner_id, invite_code)
+          friend_groups(id, name, description, owner_id, invite_code, is_private)
         `)
         .eq('user_id', uid)
         .single();
@@ -325,7 +371,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
           description: groupDescription.trim(),
           owner_id: uid
         })
-        .select('id, name, description, owner_id, invite_code')
+        .select('id, name, description, owner_id, invite_code, is_private')
         .single();
 
       if (groupError) throw groupError;
@@ -420,6 +466,46 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
     }
   };
 
+  // Debug function to test group lookup
+  const testGroupLookup = async (testCode) => {
+    try {
+      console.log('Testing group lookup for code:', testCode);
+      
+      const { data: groups, error } = await supabase
+        .from('friend_groups')
+        .select('id, name, invite_code, owner_id, is_private, created_at')
+        .eq('invite_code', testCode.trim()); // Remove toUpperCase()
+        
+      console.log('Test result:', { groups, error });
+      
+      // Also try a general query to see all groups (for debugging)
+      const { data: allGroups, error: allError } = await supabase
+        .from('friend_groups')
+        .select('id, name, invite_code, owner_id, is_private')
+        .limit(10);
+        
+      console.log('All groups (first 10):', { allGroups, allError });
+      
+      // Test the exact code from the user's data (case sensitive)
+      const { data: specificGroup, error: specificError } = await supabase
+        .from('friend_groups')
+        .select('*')
+        .eq('invite_code', '4af615d4');
+        
+      console.log('Specific test for 4af615d4:', { specificGroup, specificError });
+      
+      Alert.alert(
+        'Debug Result', 
+        `Found ${groups?.length || 0} group(s) with code ${testCode}\n\nTotal groups visible: ${allGroups?.length || 0}\n\nSpecific 4af615d4 test: ${specificGroup?.length || 0} found\n\nCheck console for details.`
+      );
+      
+      return { groups, error };
+    } catch (err) {
+      console.error('Test error:', err);
+      return { groups: null, error: err };
+    }
+  };
+
   const joinGroupWithCode = async () => {
     try {
       if (!joinCode.trim()) {
@@ -429,29 +515,52 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
 
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData?.session?.user?.id;
-      if (!uid) return;
+      if (!uid) {
+        Alert.alert('Error', 'You must be logged in to join a group');
+        return;
+      }
 
-      // Check if user is already in a group
-      const { data: existingMembership } = await supabase
+      // Check if user is already in a group (handle case where no membership exists)
+      const { data: existingMembership, error: membershipError } = await supabase
         .from('group_members')
         .select('id')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid error when no record exists
 
-      if (existingMembership) {
+      // Only block if there's actually an existing membership
+      if (existingMembership && !membershipError) {
         Alert.alert('Error', 'You can only be in one group at a time. Leave your current group first.');
         return;
       }
 
-      // Find group by invite code
-      const { data: group, error: groupError } = await supabase
-        .from('friend_groups')
-        .select('id, name, description, owner_id, invite_code')
-        .eq('invite_code', joinCode.trim().toUpperCase())
-        .single();
+      const cleanCode = joinCode.trim(); // Remove toUpperCase() - codes are case sensitive
+      console.log('Searching for group with invite code:', cleanCode);
 
-      if (groupError || !group) {
-        Alert.alert('Error', 'Invalid invite code. Please check and try again.');
+      // Find group by invite code with better error handling
+      const { data: groups, error: groupError } = await supabase
+        .from('friend_groups')
+        .select('id, name, description, owner_id, invite_code, is_private')
+        .eq('invite_code', cleanCode);
+
+      console.log('Group search result:', { groups, groupError });
+
+      if (groupError) {
+        console.error('Database error searching for group:', groupError);
+        Alert.alert('Error', 'Database error occurred. Please try again.');
+        return;
+      }
+
+      if (!groups || groups.length === 0) {
+        Alert.alert('Invalid Code', 'No group found with this invite code. Please check the code and try again.');
+        return;
+      }
+
+      const group = groups[0];
+      console.log('Found group:', group);
+
+      // Check if user is trying to join their own group
+      if (group.owner_id === uid) {
+        Alert.alert('Error', 'You cannot join your own group.');
         return;
       }
 
@@ -463,7 +572,15 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
           user_id: uid
         });
 
-      if (joinError) throw joinError;
+      if (joinError) {
+        console.error('Error joining group:', joinError);
+        if (joinError.code === '23505') { // Unique constraint violation
+          Alert.alert('Error', 'You are already a member of this group.');
+        } else {
+          Alert.alert('Error', `Failed to join group: ${joinError.message}`);
+        }
+        return;
+      }
 
       // Update local state
       setFriendGroups([group]);
@@ -474,7 +591,8 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       Alert.alert('Success!', `Welcome to "${group.name}"!`);
       loadGroupLeaderboard();
     } catch (error) {
-      Alert.alert('Error', error.message);
+      console.error('Unexpected error joining group:', error);
+      Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
     }
   };
 
@@ -629,7 +747,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
             { color: theme.textSecondary },
             selectedTab === 'city' && { color: theme.textInverse }
           ]}>
-            🏙️ Your City
+            🏙️ {userLocation?.isLoading ? 'Detecting City...' : (userLocation?.city || 'Your City')}
           </Text>
         </TouchableOpacity>
           <TouchableOpacity
@@ -651,43 +769,59 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       </View>
 
 
-      {/* Stats Overview */}
-      <View style={styles.statsOverview}>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statValue, { color: theme.primary }]}>1,247</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Players</Text>
+      {/* Stats Overview - Only show if not in groups tab or if user has groups */}
+      {!(selectedTab === 'groups' && friendGroups.length === 0) && (
+        <View style={styles.statsOverview}>
+          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              {(selectedTab === 'city' ? cityLeaderboard : groupLeaderboard).length}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Players</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              ${Math.max(...(selectedTab === 'city' ? cityLeaderboard : groupLeaderboard).map(u => u.totalWinnings || 0)).toLocaleString()}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Top Winnings</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              {Math.max(...(selectedTab === 'city' ? cityLeaderboard : groupLeaderboard).map(u => u.winRate || 0)).toFixed(1)}%
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Best Win Rate</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>
+              {(selectedTab === 'city' ? cityLeaderboard : groupLeaderboard).reduce((sum, u) => sum + (u.totalPicks || 0), 0).toLocaleString()}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Picks</Text>
+          </View>
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statValue, { color: theme.primary }]}>$2.8K</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Top Winnings</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.statValue, { color: theme.primary }]}>68.1%</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Best Win Rate</Text>
-        </View>
-      </View>
+      )}
 
       {/* Leaderboard List */}
       {selectedTab === 'groups' && friendGroups.length === 0 ? (
         <View style={styles.emptyGroupState}>
-          <Text style={styles.emptyGroupIcon}>👥</Text>
-          <Text style={[styles.emptyGroupTitle, { color: theme.textPrimary }]}>You're not in a group yet</Text>
-          <Text style={[styles.emptyGroupText, { color: theme.textSecondary }]}>
-            Either create your own group or ask your friends to invite you to theirs
-          </Text>
-          <View style={styles.emptyGroupActions}>
-            <TouchableOpacity 
-              style={[styles.emptyGroupButton, { backgroundColor: theme.primary }]}
-              onPress={() => setShowCreateGroupModal(true)}
-            >
-              <Text style={styles.emptyGroupButtonText}>Create Group</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.emptyGroupButton, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
-              onPress={() => setShowJoinModal(true)}
-            >
-              <Text style={[styles.emptyGroupButtonText, { color: theme.textPrimary }]}>Join with Code</Text>
-            </TouchableOpacity>
+          <View style={[styles.emptyGroupCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={styles.emptyGroupIcon}>🏆</Text>
+            <Text style={[styles.emptyGroupTitle, { color: theme.textPrimary }]}>Join the Competition!</Text>
+            <Text style={[styles.emptyGroupText, { color: theme.textSecondary }]}>
+              Create or join a friend group to compete with people you know and climb private leaderboards together.
+            </Text>
+            <View style={styles.emptyGroupActions}>
+              <TouchableOpacity 
+                style={[styles.emptyGroupButton, { backgroundColor: theme.primary }]}
+                onPress={() => setShowCreateGroupModal(true)}
+              >
+                <Text style={styles.emptyGroupButtonText}>🎯 Create Group</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.emptyGroupButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border, borderWidth: 1 }]}
+                onPress={() => setShowJoinModal(true)}
+              >
+                <Text style={[styles.emptyGroupButtonText, { color: theme.textPrimary }]}>📝 Join with Code</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       ) : (
@@ -704,41 +838,64 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
             
             <View style={styles.userInfo}>
               <View style={[styles.avatarContainer, { backgroundColor: theme.primary }]}>
-                <Text style={styles.avatar}>{user.avatar}</Text>
+                <Text style={styles.avatar}>{user.avatar || user.username?.charAt(0)?.toUpperCase() || '?'}</Text>
               </View>
               <View style={styles.userDetails}>
-                <Text style={[
-                  styles.username,
-                  { color: theme.textPrimary },
-                  user.isCurrentUser && { color: theme.primary }
-                ]}>
-                  {user.username}
-                </Text>
-                <Text style={[styles.picksText, { color: theme.textSecondary }]}>
-                  {user.totalPicks} picks • {user.correctPicks} correct
-                </Text>
+                <View style={styles.userHeader}>
+                  <Text style={[
+                    styles.username,
+                    { color: theme.textPrimary },
+                    user.isCurrentUser && { color: theme.primary, fontWeight: '700' }
+                  ]}>
+                    {user.username}
+                  </Text>
+                  {user.isCurrentUser && (
+                    <View style={[styles.youBadge, { backgroundColor: theme.primary }]}>
+                      <Text style={styles.youBadgeText}>YOU</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.userStatsRow}>
+                  <Text style={[styles.picksText, { color: theme.textSecondary }]}>
+                    {user.totalPicks || 0} picks
+                  </Text>
+                  <Text style={[styles.correctText, { color: theme.success }]}>
+                    {user.correctPicks || 0} wins
+                  </Text>
+                  <Text style={[styles.accuracyText, { color: theme.textSecondary }]}>
+                    ({((user.correctPicks || 0) / Math.max(user.totalPicks || 1, 1) * 100).toFixed(0)}%)
+                  </Text>
+                </View>
               </View>
             </View>
 
             <View style={styles.statsContainer}>
-              <View style={styles.statRow}>
+              <View style={styles.primaryStats}>
+                <Text style={[styles.winnings, { color: theme.success }]}>
+                  {formatCurrency(user.totalWinnings || 0)}
+                </Text>
                 <Text style={[
                   styles.winRate,
-                  { color: getWinRateColor(user.winRate) }
+                  { color: getWinRateColor(user.winRate || 0) }
                 ]}>
-                  {user.winRate}%
-                </Text>
-                <Text style={[styles.winnings, { color: theme.success }]}>
-                  {formatCurrency(user.totalWinnings)}
+                  {(user.winRate || 0).toFixed(1)}%
                 </Text>
               </View>
               <View style={styles.streakContainer}>
-                <Text style={[
-                  styles.streakText,
-                  { color: getStreakColor(user.streak) }
-                ]}>
-                  {user.streak} game streak
-                </Text>
+                <View style={[styles.streakBadge, { 
+                  backgroundColor: getStreakColor(user.streak || 0) + '20',
+                  borderColor: getStreakColor(user.streak || 0) + '40'
+                }]}>
+                  <Text style={[styles.streakIcon, { color: getStreakColor(user.streak || 0) }]}>
+                    {(user.streak || 0) > 0 ? '🔥' : (user.streak || 0) < 0 ? '❄️' : '➖'}
+                  </Text>
+                  <Text style={[
+                    styles.streakText,
+                    { color: getStreakColor(user.streak || 0) }
+                  ]}>
+                    {Math.abs(user.streak || 0)} {(user.streak || 0) === 1 || (user.streak || 0) === -1 ? 'game' : 'games'}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -800,14 +957,11 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
             </TouchableOpacity>
           </>
         ) : (
-          <>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>View My Stats</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}>
-              <Text style={[styles.actionButtonText, { color: theme.textInverse }]}>Make Pick</Text>
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity 
+            style={[styles.singleActionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}
+          >
+            <Text style={[styles.actionButtonText, { color: theme.textInverse }]}>🎯 Make Pick</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -940,7 +1094,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
               placeholderTextColor={theme.textTertiary}
               value={joinCode}
               onChangeText={setJoinCode}
-              autoCapitalize="characters"
+              autoCapitalize="none"
               maxLength={8}
               autoCorrect={false}
             />
@@ -951,12 +1105,20 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
               • Once you join, you'll compete on their leaderboard
             </Text>
 
-            <TouchableOpacity 
-              style={[styles.createButton, { backgroundColor: theme.primary }]}
-              onPress={joinGroupWithCode}
-            >
-              <Text style={styles.createButtonText}>Join Group</Text>
-            </TouchableOpacity>
+            <View style={styles.joinButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.testButton, { backgroundColor: theme.backgroundSecondary, borderColor: theme.border }]}
+                onPress={() => testGroupLookup(joinCode)}
+              >
+                <Text style={[styles.testButtonText, { color: theme.textSecondary }]}>Test Code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.createButton, { backgroundColor: theme.primary, flex: 1 }]}
+                onPress={joinGroupWithCode}
+              >
+                <Text style={styles.createButtonText}>Join Group</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -1028,15 +1190,18 @@ const styles = StyleSheet.create({
   },
   statsOverview: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
     marginTop: 20,
     marginBottom: 10,
+    gap: 12,
   },
   statCard: {
     flex: 1,
+    minWidth: '22%',
+    maxWidth: '48%',
     borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 4,
+    padding: 12,
     alignItems: 'center',
     borderWidth: 1,
     shadowColor: '#000',
@@ -1133,8 +1298,55 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   streakText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // New enhanced styles
+  userHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  youBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  youBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  userStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  correctText: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  accuracyText: {
+    fontSize: 11,
     fontWeight: '500',
+  },
+  primaryStats: {
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  streakIcon: {
+    fontSize: 12,
+    marginRight: 4,
   },
   bottomBar: {
     flexDirection: 'row',
@@ -1163,13 +1375,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  singleActionButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   // Empty group state styles
   emptyGroupState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingVertical: 60,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  emptyGroupCard: {
+    borderRadius: 20,
+    padding: 32,
+    borderWidth: 1,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   emptyGroupIcon: {
     fontSize: 64,
@@ -1188,19 +1433,44 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   emptyGroupActions: {
-    gap: 12,
+    gap: 16,
     width: '100%',
+    marginTop: 8,
   },
   emptyGroupButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   emptyGroupButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#ffffff',
+  },
+  joinButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  testButton: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Modal styles
   modalContainer: {
