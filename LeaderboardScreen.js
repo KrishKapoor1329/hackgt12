@@ -156,18 +156,13 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>Leaderboard</Text>
-        <Text style={styles.subtitle}>NFL • {selectedFilter === 'all' ? 'All Time' : filters.find(f => f.key === selectedFilter)?.label}</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Leaderboard</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>NFL • {selectedFilter === 'all' ? 'All Time' : filters.find(f => f.key === selectedFilter)?.label}</Text>
       </View>
 
       {/* Filter Tabs */}
@@ -182,13 +177,15 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
             key={filter.key}
             style={[
               styles.filterTab,
-              selectedFilter === filter.key && styles.activeFilterTab
+              { backgroundColor: theme.surface, borderColor: theme.border },
+              selectedFilter === filter.key && { backgroundColor: theme.primary, borderColor: theme.primary }
             ]}
             onPress={() => setSelectedFilter(filter.key)}
           >
             <Text style={[
               styles.filterText,
-              selectedFilter === filter.key && styles.activeFilterText
+              { color: theme.textSecondary },
+              selectedFilter === filter.key && { color: theme.textInverse }
             ]}>
               {filter.label}
             </Text>
@@ -198,17 +195,17 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
 
       {/* Stats Overview */}
       <View style={styles.statsOverview}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>1,247</Text>
-          <Text style={styles.statLabel}>Total Players</Text>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.statValue, { color: theme.primary }]}>1,247</Text>
+          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total Players</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>$2.8K</Text>
-          <Text style={styles.statLabel}>Top Winnings</Text>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.statValue, { color: theme.primary }]}>$2.8K</Text>
+          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Top Winnings</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>68.1%</Text>
-          <Text style={styles.statLabel}>Best Win Rate</Text>
+        <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.statValue, { color: theme.primary }]}>68.1%</Text>
+          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Best Win Rate</Text>
         </View>
       </View>
 
@@ -217,24 +214,26 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
         {mockLeaderboardData.map((user, index) => (
           <View key={user.id} style={[
             styles.leaderboardItem,
-            user.isCurrentUser && styles.currentUserItem
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            user.isCurrentUser && { borderColor: theme.primary, backgroundColor: theme.backgroundSecondary }
           ]}>
             <View style={styles.rankContainer}>
               <Text style={styles.rankIcon}>{getRankIcon(user.rank)}</Text>
             </View>
             
             <View style={styles.userInfo}>
-              <View style={styles.avatarContainer}>
+              <View style={[styles.avatarContainer, { backgroundColor: theme.primary }]}>
                 <Text style={styles.avatar}>{user.avatar}</Text>
               </View>
               <View style={styles.userDetails}>
                 <Text style={[
                   styles.username,
-                  user.isCurrentUser && styles.currentUsername
+                  { color: theme.textPrimary },
+                  user.isCurrentUser && { color: theme.primary }
                 ]}>
                   {user.username}
                 </Text>
-                <Text style={styles.picksText}>
+                <Text style={[styles.picksText, { color: theme.textSecondary }]}>
                   {user.totalPicks} picks • {user.correctPicks} correct
                 </Text>
               </View>
@@ -248,7 +247,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
                 ]}>
                   {user.winRate}%
                 </Text>
-                <Text style={styles.winnings}>
+                <Text style={[styles.winnings, { color: theme.success }]}>
                   {formatCurrency(user.totalWinnings)}
                 </Text>
               </View>
@@ -266,12 +265,12 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text style={styles.actionButtonText}>View My Stats</Text>
+      <View style={[styles.bottomBar, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>View My Stats</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.primaryButton]}>
-          <Text style={[styles.actionButtonText, styles.primaryButtonText]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}>
+          <Text style={[styles.actionButtonText, { color: theme.textInverse }]}>
             Make Pick
           </Text>
         </TouchableOpacity>
@@ -283,40 +282,20 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#8b5cf6',
-    borderWidth: 1,
-    borderColor: '#8b5cf6',
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
+
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1e293b',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
   },
   filterContainer: {
     marginTop: 10,
@@ -329,21 +308,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginRight: 8,
     borderRadius: 16,
-    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  activeFilterTab: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
   },
   filterText: {
-    color: '#64748b',
     fontSize: 12,
     fontWeight: '500',
-  },
-  activeFilterText: {
-    color: '#ffffff',
   },
   statsOverview: {
     flexDirection: 'row',
@@ -353,13 +322,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 4,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -372,12 +339,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8b5cf6',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
     textAlign: 'center',
   },
   leaderboardContainer: {
@@ -387,12 +352,10 @@ const styles = StyleSheet.create({
   leaderboardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -401,11 +364,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  currentUserItem: {
-    borderColor: '#8b5cf6',
-    borderWidth: 2,
-    backgroundColor: '#f3f4f6',
   },
   rankContainer: {
     width: 40,
@@ -425,7 +383,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#8b5cf6',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -439,15 +396,10 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1e293b',
     marginBottom: 4,
-  },
-  currentUsername: {
-    color: '#8b5cf6',
   },
   picksText: {
     fontSize: 12,
-    color: '#64748b',
   },
   statsContainer: {
     alignItems: 'flex-end',
@@ -464,7 +416,6 @@ const styles = StyleSheet.create({
   winnings: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#059669',
   },
   streakContainer: {
     alignItems: 'flex-end',
@@ -477,18 +428,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#f8fafc',
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
   },
   actionButton: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     alignItems: 'center',
     marginHorizontal: 6,
     shadowColor: '#000',
@@ -500,17 +447,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  primaryButton: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
-  },
   actionButtonText: {
-    color: '#1e293b',
     fontSize: 16,
     fontWeight: '600',
-  },
-  primaryButtonText: {
-    color: '#ffffff',
   },
 });
 

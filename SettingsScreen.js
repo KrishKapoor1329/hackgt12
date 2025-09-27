@@ -103,12 +103,6 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={[styles.backButtonText, { color: theme.primary }]}>← Back</Text>
-        </TouchableOpacity>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
       </View>
 
@@ -352,13 +346,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   title: {
     fontSize: 24,
