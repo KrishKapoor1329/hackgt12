@@ -13,12 +13,12 @@ export const lightTheme = {
   textSecondary: '#6b7280',
   textTertiary: '#9ca3af',
   textInverse: '#ffffff',
-  textAccent: '#3b82f6',
+  textAccent: '#8b5cf6',
   
-  // Brand colors - PrizePicks-inspired blue
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#2563eb',
+  // Brand colors - PrizePicks-inspired purple
+  primary: '#8b5cf6',
+  primaryLight: '#a78bfa',
+  primaryDark: '#7c3aed',
   secondary: '#10b981',
   
   // Status colors
@@ -27,7 +27,7 @@ export const lightTheme = {
   error: '#ef4444',
   errorLight: '#f87171',
   warning: '#f59e0b',
-  info: '#3b82f6',
+  info: '#8b5cf6',
   
   // Border and divider colors
   border: '#e5e7eb',
@@ -40,8 +40,8 @@ export const lightTheme = {
   overlay: 'rgba(0, 0, 0, 0.5)',
   
   // Accent colors
-  accent: '#3b82f6',
-  accentLight: '#93c5fd',
+  accent: '#8b5cf6',
+  accentLight: '#c4b5fd',
 };
 
 export const darkTheme = {
@@ -57,12 +57,12 @@ export const darkTheme = {
   textSecondary: '#d1d5db',
   textTertiary: '#9ca3af',
   textInverse: '#000000',
-  textAccent: '#60a5fa',
+  textAccent: '#a78bfa',
   
   // Brand colors
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#2563eb',
+  primary: '#8b5cf6',
+  primaryLight: '#a78bfa',
+  primaryDark: '#7c3aed',
   secondary: '#10b981',
   
   // Status colors
@@ -71,7 +71,7 @@ export const darkTheme = {
   error: '#ef4444',
   errorLight: '#f87171',
   warning: '#f59e0b',
-  info: '#3b82f6',
+  info: '#8b5cf6',
   
   // Border and divider colors
   border: '#374151',
@@ -84,8 +84,8 @@ export const darkTheme = {
   overlay: 'rgba(0, 0, 0, 0.7)',
   
   // Accent colors
-  accent: '#60a5fa',
-  accentLight: '#93c5fd',
+  accent: '#a78bfa',
+  accentLight: '#c4b5fd',
 };
 
 // Helper function to get theme based on isDarkMode boolean
@@ -100,7 +100,7 @@ export const colors = {
   transparent: 'transparent',
   
   // Brand colors
-  brandPrimary: '#3b82f6',
+  brandPrimary: '#8b5cf6',
   brandSecondary: '#10b981',
   
   // Social media colors
