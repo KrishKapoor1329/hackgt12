@@ -1,67 +1,94 @@
-// Provides light and dark mode color schemes
+// Dark black theme with purple accents
 
 export const lightTheme = {
-  // Background colors
+  // Background colors - Clean whites and grays
   background: '#ffffff',
-  backgroundSecondary: '#faf7ff',
-  surface: '#f5f3ff',
-  surfaceSecondary: '#ede9fe',
+  backgroundSecondary: '#f8fafc',
+  surface: '#ffffff',
+  surfaceSecondary: '#f1f5f9',
+  surfaceElevated: '#ffffff',
   
-  // Text colors
-  textPrimary: '#1e1b4b',
-  textSecondary: '#6b21a8',
-  textTertiary: '#a855f7',
+  // Text colors - High contrast for readability
+  textPrimary: '#0f172a',
+  textSecondary: '#64748b',
+  textTertiary: '#94a3b8',
   textInverse: '#ffffff',
+  textAccent: '#8b5cf6',
   
-  // Brand colors - PrizePicks Purple
+  // Brand colors - Purple accent
   primary: '#8b5cf6',
+  primaryLight: '#a78bfa',
+  primaryDark: '#7c3aed',
   secondary: '#a855f7',
   
-  // Status colors
+  // Status colors - Vibrant and clear
   success: '#10b981',
+  successLight: '#34d399',
   error: '#ef4444',
+  errorLight: '#f87171',
   warning: '#f59e0b',
+  warningLight: '#fbbf24',
   info: '#06b6d4',
   
-  // Border and divider colors
-  border: '#ddd6fe',
-  divider: '#c4b5fd',
+  // Border and divider colors - Subtle grays
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  divider: '#cbd5e1',
   
   // Shadow and overlay
-  shadow: 'rgba(0, 0, 0, 0.1)',
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  shadow: 'rgba(0, 0, 0, 0.08)',
+  shadowMedium: 'rgba(0, 0, 0, 0.12)',
+  overlay: 'rgba(0, 0, 0, 0.4)',
+  
+  // Accent colors for highlights
+  accent: '#f59e0b',
+  accentLight: '#fbbf24',
 };
 
 export const darkTheme = {
-  // Background colors
-  background: '#1e1b4b',
-  backgroundSecondary: '#312e81',
-  surface: '#312e81',
-  surfaceSecondary: '#4c1d95',
+  // Background colors - Deep black with purple tints
+  background: '#000000',
+  backgroundSecondary: '#0a0a0a',
+  surface: '#1a0a1a',
+  surfaceSecondary: '#2a1a2a',
+  surfaceElevated: '#3a2a3a',
   
-  // Text colors
-  textPrimary: '#f8fafc',
-  textSecondary: '#e9d5ff',
-  textTertiary: '#c4b5fd',
-  textInverse: '#1e1b4b',
+  // Text colors - High contrast whites with purple tints
+  textPrimary: '#ffffff',
+  textSecondary: '#e1d5e1',
+  textTertiary: '#b19fb1',
+  textInverse: '#000000',
+  textAccent: '#c084fc',
   
-  // Brand colors - PrizePicks Purple
+  // Brand colors - More purple throughout
   primary: '#8b5cf6',
+  primaryLight: '#c084fc',
+  primaryDark: '#7c3aed',
   secondary: '#a855f7',
+  tertiary: '#c084fc',
   
-  // Status colors
+  // Status colors - Purple-tinted for consistency
   success: '#10b981',
+  successLight: '#34d399',
   error: '#ef4444',
+  errorLight: '#f87171',
   warning: '#f59e0b',
-  info: '#06b6d4',
+  warningLight: '#fbbf24',
+  info: '#8b5cf6',
   
-  // Border and divider colors
-  border: '#6b21a8',
-  divider: '#7c3aed',
+  // Border and divider colors - Purple-tinted grays
+  border: '#4a3a4a',
+  borderLight: '#5a4a5a',
+  divider: '#6a5a6a',
   
-  // Shadow and overlay
-  shadow: 'rgba(0, 0, 0, 0.3)',
-  overlay: 'rgba(0, 0, 0, 0.7)',
+  // Shadow and overlay - Purple-tinted
+  shadow: 'rgba(139, 92, 246, 0.2)',
+  shadowMedium: 'rgba(139, 92, 246, 0.3)',
+  overlay: 'rgba(139, 92, 246, 0.7)',
+  
+  // Accent colors for highlights - More purple
+  accent: '#c084fc',
+  accentLight: '#ddd6fe',
 };
 
 // Helper function to get theme based on isDarkMode boolean
@@ -88,24 +115,24 @@ export const colors = {
   nba: '#c8102e',
 };
 
-// Typography scale
+// Modern Typography scale
 export const typography = {
-  // Font sizes
+  // Font sizes - More refined scale
   fontSize: {
-    xs: 12,
-    sm: 14,
-    base: 16,
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 30,
-    '4xl': 36,
-    '5xl': 48,
-    '6xl': 60,
-    '7xl': 72,
+    xs: 11,
+    sm: 13,
+    base: 15,
+    lg: 17,
+    xl: 19,
+    '2xl': 22,
+    '3xl': 26,
+    '4xl': 32,
+    '5xl': 40,
+    '6xl': 48,
+    '7xl': 56,
   },
   
-  // Font weights
+  // Font weights - Modern weight distribution
   fontWeight: {
     light: '300',
     normal: '400',
@@ -113,15 +140,24 @@ export const typography = {
     semibold: '600',
     bold: '700',
     extrabold: '800',
+    black: '900',
   },
   
-  // Line heights
+  // Line heights - Optimized for readability
   lineHeight: {
-    tight: 1.25,
-    snug: 1.375,
-    normal: 1.5,
-    relaxed: 1.625,
-    loose: 2,
+    tight: 1.2,
+    snug: 1.3,
+    normal: 1.4,
+    relaxed: 1.5,
+    loose: 1.6,
+  },
+  
+  // Letter spacing for better readability
+  letterSpacing: {
+    tight: -0.5,
+    normal: 0,
+    wide: 0.5,
+    wider: 1,
   },
 };
 
@@ -143,25 +179,41 @@ export const spacing = {
   32: 128,
 };
 
-// Border radius scale
+// Modern Border radius scale
 export const borderRadius = {
   none: 0,
+  xs: 2,
   sm: 4,
-  base: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 32,
+  base: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  '2xl': 20,
+  '3xl': 24,
+  '4xl': 32,
   full: 9999,
 };
 
-// Shadow presets
+// Modern Shadow presets - Softer, more subtle
 export const shadows = {
-  sm: {
+  none: {
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  xs: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -170,28 +222,28 @@ export const shadows = {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
   lg: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 16,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   xl: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 24,
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 8,
   },
 };
 
