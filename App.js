@@ -192,7 +192,6 @@ const PicksScreen = ({ theme, isDarkMode }) => {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(true);
-export default function YourComponent() {
   const [session, setSession] = useState(null);
   const [selectedWatchParty, setSelectedWatchParty] = useState(null);
   const theme = isDarkMode ? darkTheme : lightTheme;
