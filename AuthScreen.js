@@ -47,7 +47,9 @@ const AuthScreen = ({ theme, isDarkMode, onAuthenticated }) => {
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Welcome</Text>
         </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -107,6 +109,19 @@ const styles = StyleSheet.create({
     height: 32,
     marginRight: 12,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '800',
   },
   title: {
     fontSize: 28,
