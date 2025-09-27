@@ -316,10 +316,15 @@ const WatchPartiesScreen = ({ onBack, onWatchPartySelect, theme, isDarkMode }) =
             key={filter.key}
             style={[
               styles.filterTab,
-              { backgroundColor: theme.surface, borderColor: theme.border },
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: theme.border,
+                transform: [{ scale: selectedFilter === filter.key ? 1.05 : 1 }]
+              },
               selectedFilter === filter.key && { backgroundColor: theme.primary, borderColor: theme.primary }
             ]}
             onPress={() => setSelectedFilter(filter.key)}
+            activeOpacity={0.8}
           >
             <Text style={styles.filterIcon}>{filter.icon}</Text>
             <Text style={[
@@ -499,8 +504,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.6,
   },
   createButton: {
     padding: 5,
@@ -520,11 +526,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 6,
   },
   filterIcon: {
     fontSize: 16,
@@ -711,15 +717,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   partyCard: {
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   partyHeader: {
     flexDirection: 'row',

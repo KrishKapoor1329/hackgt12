@@ -133,10 +133,15 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
             <TouchableOpacity
               style={[
                 styles.leagueButton,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                { 
+                  backgroundColor: theme.surface, 
+                  borderColor: theme.border,
+                  transform: [{ scale: selectedLeague === 'NFL' ? 1.05 : 1 }]
+                },
                 selectedLeague === 'NFL' && { backgroundColor: theme.primary, borderColor: theme.primary }
               ]}
               onPress={() => handleLeagueSelection('NFL')}
+              activeOpacity={0.8}
             >
               <Text style={[
                 styles.leagueButtonText,
@@ -149,10 +154,15 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
             <TouchableOpacity
               style={[
                 styles.leagueButton,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                { 
+                  backgroundColor: theme.surface, 
+                  borderColor: theme.border,
+                  transform: [{ scale: selectedLeague === 'NBA' ? 1.05 : 1 }]
+                },
                 selectedLeague === 'NBA' && { backgroundColor: theme.primary, borderColor: theme.primary }
               ]}
               onPress={() => handleLeagueSelection('NBA')}
+              activeOpacity={0.8}
             >
               <Text style={[
                 styles.leagueButtonText,
@@ -362,8 +372,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.6,
   },
   content: {
     flex: 1,
@@ -384,11 +395,16 @@ const styles = StyleSheet.create({
   },
   leagueButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
   leagueButtonText: {
     fontSize: 16,
@@ -418,17 +434,27 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   phoneInput: {
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    borderWidth: 1,
-    marginBottom: 10,
+    borderWidth: 1.5,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   findButton: {
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   findButtonText: {
     color: '#ffffff',
@@ -463,9 +489,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   socialToggle: {
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   socialToggleText: {
     color: '#ffffff',

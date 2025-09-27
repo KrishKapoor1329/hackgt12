@@ -159,33 +159,40 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode }) => {
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>NFL • {selectedFilter === 'all' ? 'All Time' : filters.find(f => f.key === selectedFilter)?.label}</Text>
       </View>
 
-      {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.filterTab,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-              selectedFilter === filter.key && { backgroundColor: theme.primary, borderColor: theme.primary }
-            ]}
-            onPress={() => setSelectedFilter(filter.key)}
-          >
-            <Text style={[
-              styles.filterText,
-              { color: theme.textSecondary },
-              selectedFilter === filter.key && { color: theme.textInverse }
-            ]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Modern Horizontal Toggle Bar */}
+      <View style={styles.toggleContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.toggleContent}
+        >
+          {filters.map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.toggleButton,
+                { 
+                  backgroundColor: selectedFilter === filter.key ? theme.primary : 'transparent',
+                  borderColor: selectedFilter === filter.key ? theme.primary : theme.border,
+                  transform: [{ scale: selectedFilter === filter.key ? 1.05 : 1 }]
+                }
+              ]}
+              onPress={() => setSelectedFilter(filter.key)}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.toggleText,
+                { 
+                  color: selectedFilter === filter.key ? theme.textInverse : theme.textSecondary,
+                  fontWeight: selectedFilter === filter.key ? '700' : '600'
+                }
+              ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Stats Overview */}
       <View style={styles.statsOverview}>
@@ -295,27 +302,35 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: -0.8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
-  filterContainer: {
-    marginTop: 10,
+  toggleContainer: {
+    marginTop: 16,
+    marginBottom: 8,
   },
-  filterContent: {
+  toggleContent: {
     paddingHorizontal: 20,
   },
-  filterTab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  toggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     marginRight: 8,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  filterText: {
-    fontSize: 12,
-    fontWeight: '500',
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   statsOverview: {
     flexDirection: 'row',
@@ -325,19 +340,18 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginHorizontal: 4,
     alignItems: 'center',
-    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   statValue: {
     fontSize: 20,
@@ -355,18 +369,17 @@ const styles = StyleSheet.create({
   leaderboardItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   rankContainer: {
     width: 40,
@@ -435,20 +448,20 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     alignItems: 'center',
     marginHorizontal: 6,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   actionButtonText: {
     fontSize: 16,
