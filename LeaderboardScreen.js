@@ -724,7 +724,9 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Image source={require('./assets/image.png')} style={styles.logo} />
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>P</Text>
+          </View>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Leaderboard</Text>
         </View>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -1145,6 +1147,19 @@ const styles = StyleSheet.create({
     height: 28,
     marginRight: 10,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
   },
   title: {
     fontSize: 32,

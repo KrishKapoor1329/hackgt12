@@ -242,7 +242,9 @@ const FriendsScreen = ({ onBack, theme, isDarkMode }) => {
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
-            <Image source={require('./assets/image.png')} style={styles.logo} />
+            <View style={[styles.logoIcon, { backgroundColor: theme.primary }]}>
+              <Text style={styles.logoText}>P</Text>
+            </View>
             <Text style={[styles.title, { color: theme.textPrimary }]}>Friends</Text>
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -448,6 +450,19 @@ const styles = StyleSheet.create({
     height: 24,
     marginRight: 8,
     resizeMode: 'contain',
+  },
+  logoIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  logoText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
   },
   title: {
     fontSize: 24,
