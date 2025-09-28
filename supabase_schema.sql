@@ -20,6 +20,7 @@ create table if not exists public.profiles (
   correct_picks integer default 0,
   current_streak integer default 0,
   best_streak integer default 0,
+  favorite_nfl_team text,
   created_at timestamp with time zone default now()
 );
 
@@ -31,6 +32,7 @@ alter table public.profiles add column if not exists country text default 'US';
 alter table public.profiles add column if not exists correct_picks integer default 0;
 alter table public.profiles add column if not exists current_streak integer default 0;
 alter table public.profiles add column if not exists best_streak integer default 0;
+alter table public.profiles add column if not exists favorite_nfl_team text;
 
 -- Backfill emails from auth.users for existing rows
 update public.profiles p

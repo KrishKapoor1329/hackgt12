@@ -14,6 +14,32 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import supabase from './supabaseClient';
+import { getTeamLogo, getTeamLogoUrl } from './nflTeams';
+
+// TeamLogo component with fallback
+const TeamLogo = ({ teamAbbr, style, imageStyle }) => {
+  const logoSource = getTeamLogoUrl(teamAbbr);
+  
+  if (!logoSource) {
+    return (
+      <View style={style}>
+        <Text style={[imageStyle, { textAlign: 'center', lineHeight: imageStyle.height }]}>
+          {getTeamLogo(teamAbbr)}
+        </Text>
+      </View>
+    );
+  }
+  
+  return (
+    <View style={style}>
+      <Image
+        source={logoSource}
+        style={imageStyle}
+        resizeMode="contain"
+      />
+    </View>
+  );
+};
 
 const { width } = Dimensions.get('window');
 
@@ -118,13 +144,21 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
 
   // Helper function to create current user leaderboard entry
-  const getCurrentUserEntry = () => {
+  const getCurrentUserEntry = async () => {
     if (!userStats || !session?.user) return null;
+    
+    // Get the current user's profile to get their avatar_url and favorite team
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('avatar_url, favorite_nfl_team, username')
+      .eq('id', session.user.id)
+      .single();
     
     return {
       id: session.user.id,
-      username: 'You',
-      avatar: 'ME',
+      username: profile?.username || 'You',
+      avatar_url: profile?.avatar_url,
+      favoriteTeam: profile?.favorite_nfl_team,
       totalPicks: userStats.totalPicks,
       correctPicks: userStats.correctPicks,
       winRate: userStats.winRate,
@@ -136,8 +170,8 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
   };
 
   // Helper function to merge current user into leaderboard and sort
-  const mergeUserIntoLeaderboard = (leaderboardData) => {
-    const currentUser = getCurrentUserEntry();
+  const mergeUserIntoLeaderboard = async (leaderboardData) => {
+    const currentUser = await getCurrentUserEntry();
     if (!currentUser) return leaderboardData;
 
     // Remove any existing current user entries and add the real one
@@ -183,11 +217,15 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
 
   // Update leaderboard when userStats change
   useEffect(() => {
-    if (userStats && selectedTab === 'city' && cityLeaderboard.length > 0) {
-      setCityLeaderboard(prevLeaderboard => mergeUserIntoLeaderboard(
-        prevLeaderboard.filter(user => !user.isCurrentUser)
-      ));
-    }
+    const updateLeaderboard = async () => {
+      if (userStats && selectedTab === 'city' && cityLeaderboard.length > 0) {
+        const mergedData = await mergeUserIntoLeaderboard(
+          cityLeaderboard.filter(user => !user.isCurrentUser)
+        );
+        setCityLeaderboard(mergedData);
+      }
+    };
+    updateLeaderboard();
   }, [userStats]);
 
   const loadUserProfile = async () => {
@@ -233,7 +271,8 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
 
       if (!userCity || userCity === 'Unknown City') {
         // Use mock data if no city available
-        setCityLeaderboard(mergeUserIntoLeaderboard(mockLeaderboardData));
+        const mergedData = await mergeUserIntoLeaderboard(mockLeaderboardData);
+        setCityLeaderboard(mergedData);
         setUserCity(userLocation?.displayName || 'Unknown City');
         return;
       }
@@ -244,7 +283,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
       // Get city leaderboard using detected city
       const { data: cityData } = await supabase
         .from('profiles')
-        .select('id, username, email, total_winnings, total_picks, correct_picks, win_rate, current_streak, best_streak')
+        .select('id, username, email, total_winnings, total_picks, correct_picks, win_rate, current_streak, best_streak, favorite_nfl_team, avatar_url')
         .eq('city', userCity)
         .order('total_winnings', { ascending: false })
         .limit(50);
@@ -258,14 +297,18 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
         totalWinnings: user.total_winnings || 0,
         streak: user.current_streak || 0,
         bestStreak: user.best_streak || 0,
+        favoriteTeam: user.favorite_nfl_team,
+        avatar_url: user.avatar_url,
         rank: index + 1,
         isCurrentUser: user.id === uid,
       }));
 
-      setCityLeaderboard(leaderboardData);
+      const mergedData = await mergeUserIntoLeaderboard(leaderboardData);
+      setCityLeaderboard(mergedData);
     } catch (error) {
       console.error('Error loading city leaderboard:', error);
-      setCityLeaderboard(mergeUserIntoLeaderboard(mockLeaderboardData));
+      const mergedData = await mergeUserIntoLeaderboard(mockLeaderboardData);
+      setCityLeaderboard(mergedData);
     } finally {
       setLoading(false);
     }
@@ -311,7 +354,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
         .from('group_members')
         .select(`
           user_id,
-          profiles!inner(id, username, email, total_winnings, total_picks, correct_picks, win_rate, current_streak, best_streak)
+          profiles!inner(id, username, email, total_winnings, total_picks, correct_picks, win_rate, current_streak, best_streak, favorite_nfl_team)
         `)
         .eq('group_id', selectedGroup.id);
 
@@ -326,6 +369,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
           totalWinnings: profile.total_winnings || 0,
           streak: profile.current_streak || 0,
           bestStreak: profile.best_streak || 0,
+          favoriteTeam: profile.favorite_nfl_team,
           rank: index + 1,
           isCurrentUser: profile.id === member.user_id,
         };
@@ -729,44 +773,6 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
         </Text>
       </View>
 
-      {/* Timeframe Toggle */}
-      <View style={styles.timeframeContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.timeframeScroll}
-        >
-          {[
-            { key: 'today', label: 'Today' },
-            { key: 'week', label: 'This Week' },
-            { key: 'month', label: 'This Month' },
-            { key: 'all', label: 'All Time' },
-          ].map((timeframe) => (
-            <TouchableOpacity
-              key={timeframe.key}
-              style={[
-                styles.timeframeButton,
-                { 
-                  backgroundColor: selectedTab === timeframe.key ? theme.primary : 'transparent',
-                  borderColor: selectedTab === timeframe.key ? theme.primary : theme.border,
-                }
-              ]}
-              onPress={() => setSelectedTab(timeframe.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.timeframeText,
-                { 
-                  color: selectedTab === timeframe.key ? theme.textInverse : theme.textSecondary,
-                  fontWeight: selectedTab === timeframe.key ? '600' : '500'
-                }
-              ]}>
-                {timeframe.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
 
       {/* Main Tabs */}
       <View style={styles.mainTabsContainer}>
@@ -813,7 +819,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
               style={[styles.primaryButton, { backgroundColor: theme.primary }]}
               onPress={() => setShowCreateGroupModal(true)}
             >
-              <Text style={styles.primaryButtonText}>Create Group</Text>
+              <Text style={[styles.primaryButtonText, { color: theme.primaryText || '#ffffff' }]}>Create Group</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.secondaryButton, { borderColor: theme.border }]}
@@ -838,9 +844,28 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
             </View>
             
             <View style={styles.userInfo}>
-              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-                <Text style={styles.avatarText}>{user.username?.charAt(0)?.toUpperCase() || '?'}</Text>
-              </View>
+              {user.avatar_url ? (
+                <Image 
+                  source={{ uri: user.avatar_url }} 
+                  style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}
+                  onError={() => (
+                    <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                      <Text style={[styles.avatarText, { color: theme.primaryText || '#ffffff' }]}>{user.username?.charAt(0)?.toUpperCase() || '?'}</Text>
+                    </View>
+                  )}
+                />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                  <Text style={[styles.avatarText, { color: theme.primaryText || '#ffffff' }]}>{user.username?.charAt(0)?.toUpperCase() || '?'}</Text>
+                </View>
+              )}
+              {user.favoriteTeam && (
+                <TeamLogo 
+                  teamAbbr={user.favoriteTeam} 
+                  style={styles.teamLogoContainer}
+                  imageStyle={styles.teamLogoImage}
+                />
+              )}
               <View style={styles.userMeta}>
                 <Text style={[
                   styles.username,
@@ -904,31 +929,6 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
         </View>
       )}
 
-      {/* Bottom Action Bar */}
-      <View style={[styles.bottomBar, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
-        {selectedTab === 'groups' && selectedGroup ? (
-          <>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: theme.surface, borderColor: theme.border }]}
-              onPress={() => setShowInviteModal(true)}
-            >
-              <Text style={[styles.actionButtonText, { color: theme.textPrimary }]}>Invite Friends</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}
-              onPress={() => Alert.alert('Invite Code', `Share this code: ${selectedGroup.invite_code}`)}
-            >
-              <Text style={[styles.actionButtonText, { color: theme.textInverse }]}>Share Code</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity 
-            style={[styles.singleActionButton, { backgroundColor: theme.primary, borderColor: theme.primary }]}
-          >
-            <Text style={[styles.actionButtonText, { color: theme.textInverse }]}>🎯 Make Pick</Text>
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* Create Group Modal */}
       <Modal
@@ -977,7 +977,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
               style={[styles.createButton, { backgroundColor: theme.primary }]}
               onPress={createGroup}
             >
-              <Text style={styles.createButtonText}>Create Group</Text>
+              <Text style={[styles.createButtonText, { color: theme.primaryText || '#ffffff' }]}>Create Group</Text>
         </TouchableOpacity>
       </View>
         </SafeAreaView>
@@ -1014,7 +1014,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
               style={[styles.createButton, { backgroundColor: theme.primary }]}
               onPress={inviteFriendToGroup}
             >
-              <Text style={styles.createButtonText}>Send Invitation</Text>
+              <Text style={[styles.createButtonText, { color: theme.primaryText || '#ffffff' }]}>Send Invitation</Text>
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -1026,7 +1026,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
                 style={[styles.copyButton, { backgroundColor: theme.primary }]}
                 onPress={() => Alert.alert('Copied!', 'Invite code copied to clipboard')}
               >
-                <Text style={styles.copyButtonText}>Copy</Text>
+                <Text style={[styles.copyButtonText, { color: theme.primaryText || '#ffffff' }]}>Copy</Text>
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalNote, { color: theme.textSecondary }]}>
@@ -1081,7 +1081,7 @@ const LeaderboardScreen = ({ onBack, theme, isDarkMode, userStats, session, user
                 style={[styles.createButton, { backgroundColor: theme.primary, flex: 1 }]}
                 onPress={joinGroupWithCode}
               >
-                <Text style={styles.createButtonText}>Join Group</Text>
+                <Text style={[styles.createButtonText, { color: theme.primaryText || '#ffffff' }]}>Join Group</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1181,6 +1181,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
+  teamLogoContainer: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  teamLogoImage: {
+    width: 28,
+    height: 28,
+  },
   avatar: {
     width: 36,
     height: 36,
@@ -1188,9 +1199,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
   avatarText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1252,7 +1263,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1379,7 +1389,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   createButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1407,7 +1416,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   copyButtonText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },

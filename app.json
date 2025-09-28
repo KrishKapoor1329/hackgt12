@@ -43,7 +43,9 @@
         {
           "locationAlwaysAndWhenInUsePermission": "This app uses location to show you leaderboards for your city and connect you with nearby players."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-asset"
     ]
   }
 }

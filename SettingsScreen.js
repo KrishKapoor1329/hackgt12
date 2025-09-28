@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Buffer } from 'buffer';
+import { decode } from 'base64-arraybuffer';
 import {
   StyleSheet,
   Text,
@@ -10,11 +12,39 @@ import {
   TextInput,
   Alert,
   Image,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as ImagePicker from 'expo-image-picker';
 import supabase from './supabaseClient';
+import { NFL_TEAMS, getSortedTeams, getTeamByAbbreviation, getTeamLogo, getTeamLogoUrl, getTeamName } from './nflTeams';
+
+// TeamLogo component with fallback for Settings
+const TeamLogoComponent = ({ teamAbbr, style, fallbackStyle }) => {
+  const logoSource = getTeamLogoUrl(teamAbbr);
+  
+  if (!logoSource) {
+    return (
+      <Text style={fallbackStyle}>
+        {getTeamLogo(teamAbbr)}
+      </Text>
+    );
+  }
+  
+  return (
+    <Image
+      source={logoSource}
+      style={style}
+      resizeMode="contain"
+    />
+  );
+};
 
 export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDarkMode }) {
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState('NFL');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailQuery, setEmailQuery] = useState('');
@@ -35,6 +65,154 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
   const [searchResults, setSearchResults] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
+  
+  // NFL team selection
+  const [selectedNFLTeam, setSelectedNFLTeam] = useState(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+
+  // Load profile picture
+  useEffect(() => {
+    const loadProfilePicture = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData?.session?.user?.id;
+        if (!uid) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', uid)
+          .single();
+
+        if (profile?.avatar_url) {
+          setProfilePicture(profile.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error loading profile picture:', error);
+      }
+    };
+    loadProfilePicture();
+  }, []);
+
+  const pickImage = async () => {
+    try {
+      // Request camera permissions
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (cameraStatus !== 'granted' && libraryStatus !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera and photo library permissions to change your profile picture.');
+        return;
+      }
+
+      // Show action sheet to choose between camera and photo library
+      Alert.alert(
+        'Select Photo',
+        'Choose how you want to select your profile picture',
+        [
+          {
+            text: 'Camera',
+            onPress: () => takePhoto(),
+            style: 'default'
+          },
+          {
+            text: 'Photo Library',
+            onPress: () => selectFromLibrary(),
+            style: 'default'
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to access camera or photo library');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const selectFromLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image from library');
+    }
+  };
+
+  const uploadProfilePicture = async (uri) => {
+    try {
+      setUploading(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id;
+      if (!uid) throw new Error('Not authenticated');
+
+      // Convert uri to base64
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+      const base64String = Buffer.from(arrayBuffer).toString('base64');
+      
+      // Upload to Supabase Storage
+      const fileExt = uri.split('.').pop();
+      const fileName = `${uid}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, decode(base64String), {
+          contentType: `image/${fileExt}`
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', uid);
+
+      if (updateError) throw updateError;
+
+      setProfilePicture(publicUrl);
+      Alert.alert('Success', 'Profile picture updated!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload image');
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     const loadRequests = async () => {
@@ -66,6 +244,29 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
       setOutgoingRequests(outgoing || []);
     };
     loadRequests();
+  }, []);
+
+  useEffect(() => {
+    const loadFavoriteTeam = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData?.session?.user?.id;
+        if (!uid) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('favorite_nfl_team')
+          .eq('id', uid)
+          .single();
+
+        if (profile?.favorite_nfl_team) {
+          setSelectedNFLTeam(profile.favorite_nfl_team);
+        }
+      } catch (error) {
+        console.error('Error loading favorite team:', error);
+      }
+    };
+    loadFavoriteTeam();
   }, []);
 
   const handleLeagueSelection = (league) => {
@@ -187,6 +388,32 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
     }));
   };
 
+  const handleTeamSelection = async (teamAbbr) => {
+    try {
+      setLoadingTeam(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id;
+      if (!uid) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ favorite_nfl_team: teamAbbr })
+        .eq('id', uid);
+
+      if (error) throw error;
+
+      setSelectedNFLTeam(teamAbbr);
+      setShowTeamModal(false);
+      
+      const teamName = getTeamName(teamAbbr);
+      Alert.alert('Team Updated!', `You're now representing ${teamName}!`);
+    } catch (error) {
+      Alert.alert('Error', `Failed to update favorite team: ${error.message}`);
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
@@ -202,6 +429,43 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
+        {/* Profile Picture */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Profile Picture</Text>
+          <View style={styles.profilePictureContainer}>
+            <TouchableOpacity 
+              style={[styles.profilePictureWrapper, { backgroundColor: theme.backgroundSecondary }]} 
+              onPress={pickImage}
+              disabled={uploading}
+            >
+              {profilePicture ? (
+                <Image 
+                  source={{ uri: profilePicture }} 
+                  style={styles.profilePicture}
+                />
+              ) : (
+                <Text style={[styles.profilePicturePlaceholder, { color: theme.textSecondary }]}>
+                  📷
+                </Text>
+              )}
+              {uploading && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator color={theme.primary} />
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.changePhotoButton, { backgroundColor: theme.primary }]}
+              onPress={pickImage}
+              disabled={uploading}
+            >
+              <Text style={[styles.changePhotoText, { color: theme.primaryText || '#ffffff' }]}>
+                {profilePicture ? 'Change Photo' : 'Add Photo'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Theme Toggle */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Appearance</Text>
@@ -268,6 +532,40 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
           </Text>
         </View>
 
+        {/* NFL Team Selection */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Favorite NFL Team</Text>
+          <TouchableOpacity
+            style={[styles.teamSelector, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={() => setShowTeamModal(true)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.teamSelectorContent}>
+              {selectedNFLTeam ? (
+                <TeamLogoComponent
+                  teamAbbr={selectedNFLTeam}
+                  style={styles.teamSelectorLogo}
+                  fallbackStyle={styles.teamSelectorEmoji}
+                />
+              ) : (
+                <Text style={styles.teamSelectorEmoji}>🏈</Text>
+              )}
+              <View style={styles.teamInfo}>
+                <Text style={[styles.teamName, { color: theme.textPrimary }]}>
+                  {selectedNFLTeam ? getTeamName(selectedNFLTeam) : 'Select Your Team'}
+                </Text>
+                <Text style={[styles.teamSubtext, { color: theme.textSecondary }]}>
+                  {selectedNFLTeam ? 'Tap to change' : 'Choose your favorite NFL team'}
+                </Text>
+              </View>
+              <Text style={[styles.chevron, { color: theme.textSecondary }]}>›</Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={[styles.leagueNote, { color: theme.textTertiary }]}>
+            Your team logo will appear next to your name on the leaderboard
+          </Text>
+        </View>
+
         {/* Friends & Social */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Friends & Social</Text>
@@ -302,7 +600,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
               keyboardType="phone-pad"
             />
             <TouchableOpacity style={[styles.findButton, { backgroundColor: theme.primary }]} onPress={searchByEmailOrPhone}>
-              <Text style={styles.findButtonText}>Search</Text>
+              <Text style={[styles.findButtonText, { color: theme.primaryText || '#ffffff' }]}>Search</Text>
             </TouchableOpacity>
           </View>
 
@@ -313,7 +611,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
                 <View key={u.id} style={styles.resultRow}>
                   <Text style={[styles.resultText, { color: theme.textPrimary }]}>{u.username || u.email || u.phone}</Text>
                   <TouchableOpacity style={[styles.resultButton, { backgroundColor: theme.primary }]} onPress={() => sendFriendRequest(u.id)}>
-                    <Text style={styles.resultButtonText}>Request</Text>
+                    <Text style={[styles.resultButtonText, { color: theme.primaryText || '#ffffff' }]}>Request</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -397,7 +695,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
                   style={[styles.socialInputButton, { backgroundColor: theme.primary }]}
                   onPress={() => handleSocialMediaConnect('twitter')}
                 >
-                  <Text style={styles.connectButtonText}>Connect</Text>
+                  <Text style={[styles.connectButtonText, { color: theme.primaryText || '#ffffff' }]}>Connect</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -456,7 +754,7 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
                   style={[styles.socialInputButton, { backgroundColor: theme.primary }]}
                   onPress={() => handleSocialMediaConnect('discord')}
                 >
-                  <Text style={styles.connectButtonText}>Connect</Text>
+                  <Text style={[styles.connectButtonText, { color: theme.primaryText || '#ffffff' }]}>Connect</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -492,11 +790,100 @@ export default function SettingsScreen({ navigation, theme, isDarkMode, setIsDar
         </View>
 
       </ScrollView>
+
+      {/* NFL Team Selection Modal */}
+      <Modal
+        visible={showTeamModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTeamModal(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Select Your NFL Team</Text>
+            <TouchableOpacity onPress={() => setShowTeamModal(false)}>
+              <Text style={[styles.modalClose, { color: theme.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={getSortedTeams()}
+            keyExtractor={(item) => item.abbreviation}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.teamOption,
+                  { backgroundColor: theme.surface, borderBottomColor: theme.border },
+                  selectedNFLTeam === item.abbreviation && { backgroundColor: theme.backgroundSecondary }
+                ]}
+                onPress={() => handleTeamSelection(item.abbreviation)}
+                disabled={loadingTeam}
+              >
+                <TeamLogoComponent
+                  teamAbbr={item.abbreviation}
+                  style={styles.teamOptionLogoImage}
+                  fallbackStyle={styles.teamOptionLogo}
+                />
+                <View style={styles.teamOptionInfo}>
+                  <Text style={[styles.teamOptionName, { color: theme.textPrimary }]}>
+                    {item.name}
+                  </Text>
+                  <Text style={[styles.teamOptionConference, { color: theme.textSecondary }]}>
+                    {item.conference} {item.division}
+                  </Text>
+                </View>
+                {selectedNFLTeam === item.abbreviation && (
+                  <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>
+                )}
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
+            style={styles.teamList}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Profile Picture Styles
+  profilePictureContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profilePictureWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  profilePicture: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  profilePicturePlaceholder: {
+    fontSize: 40,
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  changePhotoButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  changePhotoText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
   },
@@ -617,7 +1004,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   findButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -701,7 +1087,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   connectButtonText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -736,8 +1121,103 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultButtonText: {
-    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  // NFL Team Selection Styles
+  teamSelector: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  teamSelectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  teamLogo: {
+    marginRight: 12,
+  },
+  teamSelectorLogo: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+  },
+  teamSelectorEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  teamInfo: {
+    flex: 1,
+  },
+  teamName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  teamSubtext: {
+    fontSize: 14,
+  },
+  chevron: {
+    fontSize: 20,
+    fontWeight: '300',
+  },
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalClose: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  teamList: {
+    flex: 1,
+  },
+  teamOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  teamOptionLogo: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  teamOptionLogoImage: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+  },
+  teamOptionInfo: {
+    flex: 1,
+  },
+  teamOptionName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  teamOptionConference: {
+    fontSize: 14,
+  },
+  checkmark: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

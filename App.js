@@ -1,69 +1,135 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Image, Dimensions } from 'react-native';
 import { useState, useEffect } from 'react';
+import { LineChart } from 'react-native-chart-kit';
 import SettingsScreen from './SettingsScreen';
 import LeaderboardScreen from './LeaderboardScreen';
 import WatchPartiesScreen from './WatchPartiesScreen';
 import FriendsScreen from './FriendsScreen';
 import WatchPartyDetailScreen from './WatchPartyDetailScreen';
+import GameDetailScreen from './GameDetailScreen';
 import { lightTheme, darkTheme } from './Theme';
 import AuthScreen from './AuthScreen';
 import supabase from './supabaseClient';
 import LocationService from './LocationService';
+import BetGenerator from './BetGenerator';
 
 // PrizePicks-style Navigation Bar
 const NavigationBar = ({ currentScreen, setCurrentScreen, theme }) => {
   const navItems = [
-    { key: 'home', icon: '🏠', label: 'Home' },
-    { key: 'picks', icon: '🎯', label: 'Picks' },
-    { key: 'friends', icon: '👥', label: 'Friends' },
-    { key: 'leaderboard', icon: '🏆', label: 'Board' },
-    { key: 'watchparties', icon: '📺', label: 'Watch' },
+    { key: 'home', label: 'Home' },
+    { key: 'friends', label: 'Friends' },
+    { key: 'leaderboard', label: 'Leaderboard' },
+    { key: 'watchparties', label: 'Watch Parties' },
   ];
 
   return (
     <View style={[styles.navigationBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-      {navItems.map((item) => (
-        <TouchableOpacity
-          key={item.key}
-          style={[
-            styles.navItem,
-            currentScreen === item.key && styles.navItemActive
-          ]}
-          onPress={() => setCurrentScreen(item.key)}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.navIcon,
-            { color: currentScreen === item.key ? theme.primary : theme.textTertiary }
-          ]}>
-            {item.icon}
-          </Text>
-          <Text style={[
-            styles.navLabel,
-            { 
-              color: currentScreen === item.key ? theme.primary : theme.textTertiary,
-              fontWeight: currentScreen === item.key ? '600' : '500'
-            }
-          ]}>
-            {item.label}
-          </Text>
-        </TouchableOpacity>
+      {navItems.map((item, index) => (
+        <View key={item.key} style={styles.navItemContainer}>
+          <TouchableOpacity
+            style={[
+              styles.navItem,
+              currentScreen === item.key && styles.navItemActive
+            ]}
+            onPress={() => setCurrentScreen(item.key)}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.navIcon,
+              { color: currentScreen === item.key ? theme.primary : theme.textTertiary }
+            ]}>
+              {item.icon}
+            </Text>
+            <Text style={[
+              styles.navLabel,
+              { 
+                color: currentScreen === item.key ? theme.primary : theme.textTertiary,
+                fontWeight: currentScreen === item.key ? '600' : '500'
+              }
+            ]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+          {index < navItems.length - 1 && (
+            <View style={[styles.navDivider, { backgroundColor: theme.border }]} />
+          )}
+        </View>
       ))}
     </View>
   );
 };
 
+// Helper function for ordinal suffixes
+const getOrdinalSuffix = (num) => {
+  const j = num % 10;
+  const k = num % 100;
+  if (j == 1 && k != 11) return "st";
+  if (j == 2 && k != 12) return "nd";
+  if (j == 3 && k != 13) return "rd";
+  return "th";
+};
+
 // PrizePicks-style Home Screen
 const HomeScreen = ({ theme, isDarkMode, userStats, setCurrentScreen }) => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState('today');
-  
-  const timeframes = [
-    { key: 'today', label: 'Today' },
-    { key: 'week', label: 'This Week' },
-    { key: 'month', label: 'This Month' },
-    { key: 'all', label: 'All Time' },
-  ];
+  const [liveGame, setLiveGame] = useState(null);
+
+  const generateLiveBets = () => {
+    const betOptions = [
+      { id: 1, question: "Will the next play gain 5+ yards?", options: ["Yes", "No"] },
+      { id: 2, question: "Will the next play be a PASS or RUSH?", options: ["Pass", "Rush"] },
+      { id: 3, question: "Will Jalen Hurts throw to A.J. Brown?", options: ["Yes", "No"] },
+      { id: 4, question: "Will the Eagles score on this drive?", options: ["Yes", "No"] },
+      { id: 5, question: "Will the next play be incomplete?", options: ["Yes", "No"] },
+      { id: 6, question: "Will there be a penalty on next play?", options: ["Yes", "No"] },
+      { id: 7, question: "Will the Eagles get a first down?", options: ["Yes", "No"] },
+      { id: 8, question: "Will the play go to the left or right?", options: ["Left", "Right"] }
+    ];
+    
+    // Randomly select 3 different bets
+    const shuffled = betOptions.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
+  };
+
+  const fetchLiveGame = async () => {
+    const baseGameData = {
+      gameTitle: "Super Bowl LVII",
+      homeTeam: "Kansas City Chiefs",
+      awayTeam: "Philadelphia Eagles",
+      homeScore: 22,
+      awayScore: 40,
+      quarter: 4,
+      clock: "6:37",
+      possession: "PHI",
+      down: 2,
+      distance: 11,
+      yardLine: "KC 27",
+      lastPlay: "J.Hurts pass to D.Smith for 20 yards to the KC 27.",
+      winProbability: 88,
+      gameOver: false
+    };
+
+    try {
+      // Try to get AI-generated bets
+      const aiBets = await BetGenerator.generateLiveBets(baseGameData);
+      setLiveGame({
+        ...baseGameData,
+        liveBets: aiBets
+      });
+    } catch (error) {
+      // Fallback to simple bets
+      setLiveGame({
+        ...baseGameData,
+        liveBets: generateLiveBets()
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveGame();
+    const interval = setInterval(fetchLiveGame, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -72,7 +138,7 @@ const HomeScreen = ({ theme, isDarkMode, userStats, setCurrentScreen }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={[styles.appTitle, { color: theme.textPrimary }]}>PickWise</Text>
+          <Text style={[styles.appTitle, { color: theme.textPrimary }]}>FanZone</Text>
           <TouchableOpacity 
             style={[styles.settingsButton, { backgroundColor: theme.surfaceSecondary }]}
             onPress={() => setCurrentScreen('settings')}
@@ -84,40 +150,10 @@ const HomeScreen = ({ theme, isDarkMode, userStats, setCurrentScreen }) => {
           Make your picks and compete
         </Text>
       </View>
-
-      {/* Timeframe Toggle */}
-      <View style={styles.timeframeContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.timeframeScroll}
-        >
-          {timeframes.map((timeframe) => (
-            <TouchableOpacity
-              key={timeframe.key}
-              style={[
-                styles.timeframeButton,
-                { 
-                  backgroundColor: selectedTimeframe === timeframe.key ? theme.primary : 'transparent',
-                  borderColor: selectedTimeframe === timeframe.key ? theme.primary : theme.border,
-                }
-              ]}
-              onPress={() => setSelectedTimeframe(timeframe.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.timeframeText,
-                { 
-                  color: selectedTimeframe === timeframe.key ? theme.textInverse : theme.textSecondary,
-                  fontWeight: selectedTimeframe === timeframe.key ? '600' : '500'
-                }
-              ]}>
-                {timeframe.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      <View style={{ paddingHorizontal: 20 }}>
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
       </View>
+
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
@@ -153,88 +189,148 @@ const HomeScreen = ({ theme, isDarkMode, userStats, setCurrentScreen }) => {
           </View>
         </View>
 
-        {/* Today's Games */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Today's Games</Text>
-            <TouchableOpacity>
-              <Text style={[styles.sectionAction, { color: theme.primary }]}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={[styles.gameCard, { backgroundColor: theme.surface }]}>
-            <View style={styles.gameHeader}>
-              <View style={styles.gameInfo}>
-                <Text style={[styles.gameTime, { color: theme.textSecondary }]}>8:15 PM EST</Text>
-                <View style={[styles.liveIndicator, { backgroundColor: theme.error }]}>
-                  <Text style={styles.liveText}>LIVE</Text>
-                </View>
-              </View>
-              <View style={[styles.leagueBadge, { backgroundColor: theme.primary }]}>
-                <Text style={styles.leagueText}>NFL</Text>
-              </View>
+        {/* Performance Graph */}
+        <View style={[styles.graphContainer, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.graphTitle, { color: theme.textPrimary }]}>Performance</Text>
+          <LineChart
+            data={{
+              labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+              datasets: [{
+                data: [
+                  userStats?.totalWinnings * 0.7,
+                  userStats?.totalWinnings * 0.8,
+                  userStats?.totalWinnings * 0.75,
+                  userStats?.totalWinnings * 0.9,
+                  userStats?.totalWinnings * 0.85,
+                  userStats?.totalWinnings * 0.95,
+                  userStats?.totalWinnings || 1890,
+                ]
+              }]
+            }}
+            width={Dimensions.get('window').width - 72}
+            height={180}
+            chartConfig={{
+              backgroundColor: theme.surface,
+              backgroundGradientFrom: theme.surface,
+              backgroundGradientTo: theme.surface,
+              decimalPlaces: 0,
+              color: (opacity = 1) => theme.primary,
+              labelColor: (opacity = 1) => theme.textSecondary,
+              style: {
+                borderRadius: 16
+              },
+              propsForDots: {
+                r: '6',
+                strokeWidth: '2',
+                stroke: theme.primary
+              }
+            }}
+            bezier
+            style={{
+              marginVertical: 8,
+              borderRadius: 16
+            }}
+          />
+          <View style={styles.graphLegend}>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendValue, { color: theme.success }]}>+$290</Text>
+              <Text style={[styles.legendLabel, { color: theme.textSecondary }]}>Past Week</Text>
             </View>
-            
-            <Text style={[styles.gameMatchup, { color: theme.textPrimary }]}>Chiefs vs Ravens</Text>
-            <Text style={[styles.gameStatus, { color: theme.textSecondary }]}>2nd Quarter • 14-7</Text>
-            
-            <TouchableOpacity 
-              style={[styles.pickButton, { backgroundColor: theme.primary }]}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pickButtonText}>Make Pick</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.gameCard, { backgroundColor: theme.surface }]}>
-            <View style={styles.gameHeader}>
-              <View style={styles.gameInfo}>
-                <Text style={[styles.gameTime, { color: theme.textSecondary }]}>4:25 PM EST</Text>
-              </View>
-              <View style={[styles.leagueBadge, { backgroundColor: theme.primary }]}>
-                <Text style={styles.leagueText}>NFL</Text>
-              </View>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendValue, { color: theme.success }]}>+15.3%</Text>
+              <Text style={[styles.legendLabel, { color: theme.textSecondary }]}>Growth</Text>
             </View>
-            
-            <Text style={[styles.gameMatchup, { color: theme.textPrimary }]}>Cowboys vs Eagles</Text>
-            <Text style={[styles.gameStatus, { color: theme.textSecondary }]}>Starting Soon</Text>
-            
-            <TouchableOpacity 
-              style={[styles.pickButton, { backgroundColor: theme.primary }]}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.pickButtonText}>Make Pick</Text>
-            </TouchableOpacity>
           </View>
         </View>
+
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+        {/* Live Games */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Live Games</Text>
+          
+          {liveGame && (
+            <TouchableOpacity 
+              style={[styles.espnGameCard, { backgroundColor: theme.surface }]}
+              onPress={() => setCurrentScreen('gamedetail')}
+              activeOpacity={0.8}
+            >
+              {/* ESPN-style Header */}
+              <View style={[styles.espnHeader, { borderBottomColor: theme.border }]}>
+                <View style={styles.headerLeft}>
+                  <View style={[styles.liveIndicator, { backgroundColor: '#ff4444' }]}>
+                    <Text style={styles.liveText}>● LIVE</Text>
+                  </View>
+                  <Text style={[styles.gameTitle, { color: theme.textPrimary }]}>{liveGame.gameTitle}</Text>
+                </View>
+                <View style={[styles.leagueBadge, { backgroundColor: '#013369' }]}>
+                  <Text style={styles.leagueText}>NFL</Text>
+                </View>
+              </View>
+
+              {/* Main Game Display */}
+              <View style={styles.espnGameBody}>
+                {/* Away Team */}
+                <View style={styles.espnTeam}>
+                  <View style={styles.teamIdentity}>
+                    <Image source={require('./philly.png')} style={styles.espnTeamLogo} />
+                    <View style={styles.teamDetails}>
+                      <Text style={[styles.espnTeamName, { color: theme.textPrimary }]}>Philadelphia</Text>
+                      <Text style={[styles.espnTeamRecord, { color: theme.textSecondary }]}>Eagles • 11-1</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.espnScore, { color: theme.textPrimary }]}>{liveGame.awayScore}</Text>
+                </View>
+
+                {/* Home Team */}
+                <View style={styles.espnTeam}>
+                  <View style={styles.teamIdentity}>
+                    <Image source={require('./kansas.png')} style={styles.espnTeamLogo} />
+                    <View style={styles.teamDetails}>
+                      <Text style={[styles.espnTeamName, { color: theme.textPrimary }]}>Kansas City</Text>
+                      <Text style={[styles.espnTeamRecord, { color: theme.textSecondary }]}>Chiefs • 9-3</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.espnScore, { color: theme.textPrimary }]}>{liveGame.homeScore}</Text>
+                </View>
+              </View>
+
+              {/* Game Situation */}
+              <View style={[styles.gameSituation, { backgroundColor: theme.backgroundSecondary }]}>
+                <View style={styles.situationLeft}>
+                  <Text style={[styles.timeAndDown, { color: theme.textPrimary }]}>
+                    Q{liveGame.quarter} {liveGame.clock} • {liveGame.down}{getOrdinalSuffix(liveGame.down)} & {liveGame.distance}
+                  </Text>
+                  <Text style={[styles.possession, { color: theme.primary }]}>
+                    {liveGame.possession} Ball at {liveGame.yardLine}
+                  </Text>
+                </View>
+                <View style={styles.winProbSection}>
+                  <Text style={[styles.winProbLabel, { color: theme.textSecondary }]}>WIN PROB</Text>
+                  <Text style={[styles.winProbValue, { color: '#00AA00' }]}>{liveGame.winProbability}%</Text>
+                </View>
+              </View>
+
+              {/* Action Button */}
+              <View style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+                <Text style={[styles.actionButtonText, { color: theme.primaryText || '#ffffff' }]}>🎯 Place Live Bets</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+         </View>
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Recent Activity */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Recent Activity</Text>
           
-          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
-            <View style={[styles.activityIcon, { backgroundColor: theme.success + '20' }]}>
-              <Text style={styles.activityEmoji}>✅</Text>
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={[styles.activityText, { color: theme.textPrimary }]}>
-                Your Ravens pick won!
-              </Text>
-              <Text style={[styles.activityTime, { color: theme.textSecondary }]}>2 hours ago</Text>
-            </View>
-            <Text style={[styles.activityAmount, { color: theme.success }]}>+$125</Text>
-          </View>
-
-          <View style={[styles.activityCard, { backgroundColor: theme.surface }]}>
-            <View style={[styles.activityIcon, { backgroundColor: theme.primary + '20' }]}>
-              <Text style={styles.activityEmoji}>📈</Text>
-            </View>
-            <View style={styles.activityContent}>
-              <Text style={[styles.activityText, { color: theme.textPrimary }]}>
-                Moved up 3 spots on leaderboard
-              </Text>
-              <Text style={[styles.activityTime, { color: theme.textSecondary }]}>Yesterday</Text>
-            </View>
+          <View style={[styles.emptyState, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+              No recent activity yet
+            </Text>
+            <Text style={[styles.emptyStateSubtext, { color: theme.textTertiary }]}>
+              Start placing bets to see your activity here
+            </Text>
           </View>
         </View>
 
@@ -465,6 +561,14 @@ export default function App() {
         );
       case 'picks':
         return <PicksScreen theme={theme} isDarkMode={isDarkMode} />;
+      case 'gamedetail':
+        return (
+          <GameDetailScreen 
+            onBack={() => setCurrentScreen('home')}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        );
       default:
         return <HomeScreen theme={theme} isDarkMode={isDarkMode} userStats={userStats} setCurrentScreen={setCurrentScreen} />;
     }
@@ -564,6 +668,40 @@ const styles = StyleSheet.create({
   statsSection: {
     marginBottom: 24,
   },
+
+  // Graph Styles
+  graphContainer: {
+    marginBottom: 24,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  graphTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  graphLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+  },
+  legendItem: {
+    alignItems: 'center',
+  },
+  legendValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  legendLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
   statsGrid: {
     flexDirection: 'row',
     gap: 12,
@@ -607,6 +745,12 @@ const styles = StyleSheet.create({
   sectionAction: {
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Dividers
+  divider: {
+    height: 1,
+    marginVertical: 12,
   },
 
   // Game Card Styles
@@ -676,6 +820,174 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // ESPN-style Game Card
+  espnGameCard: {
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  espnHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gameTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 12,
+  },
+  espnGameBody: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  espnTeam: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  teamIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  espnTeamLogo: {
+    width: 50,
+    height: 50,
+    marginRight: 12,
+    resizeMode: 'contain',
+  },
+  teamDetails: {
+    flex: 1,
+  },
+  espnTeamName: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  espnTeamRecord: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  espnScore: {
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  gameSituation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  situationLeft: {
+    flex: 1,
+  },
+  timeAndDown: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  possession: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  winProbSection: {
+    alignItems: 'flex-end',
+  },
+  winProbLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  winProbValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  actionButton: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // Original Team Logo Styles (for other components)
+  teamLogos: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  teamContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  teamLogo: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  teamLogoImage: {
+    width: 40,
+    height: 40,
+    marginBottom: 4,
+    resizeMode: 'contain',
+  },
+  teamName: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  teamScore: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  vs: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginHorizontal: 16,
+  },
+
+  // Empty State Styles
+  emptyState: {
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
+
   // Activity Card Styles
   activityCard: {
     flexDirection: 'row',
@@ -721,25 +1033,40 @@ const styles = StyleSheet.create({
   navigationBar: {
     flexDirection: 'row',
     paddingTop: 12,
-    paddingBottom: 34,
-    paddingHorizontal: 8,
+    paddingBottom: 28,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
+    alignItems: 'center',
+  },
+  navItemContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
   },
   navItemActive: {
     transform: [{ scale: 1.05 }],
   },
+  navDivider: {
+    width: 1,
+    height: 32,
+    opacity: 0.3,
+  },
   navIcon: {
     fontSize: 20,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   navLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 
   // Placeholder Screen Styles

@@ -1,7 +1,7 @@
 // PrizePicks-inspired theme with clean, modern design
 
 export const lightTheme = {
-  // Background colors - Clean whites and subtle grays
+  // Background colors - Clean whites and subtle grays (shadcn style)
   background: '#ffffff',
   backgroundSecondary: '#f8f9fa',
   surface: '#ffffff',
@@ -9,25 +9,26 @@ export const lightTheme = {
   surfaceElevated: '#ffffff',
   
   // Text colors - High contrast for readability
-  textPrimary: '#1a1a1a',
+  textPrimary: '#0a0a0a',
   textSecondary: '#6b7280',
   textTertiary: '#9ca3af',
   textInverse: '#ffffff',
-  textAccent: '#3b82f6',
+  textAccent: '#0a0a0a',
   
-  // Brand colors - PrizePicks-inspired blue
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#2563eb',
-  secondary: '#10b981',
+  // Brand colors - Black and white theme
+  primary: '#0a0a0a',
+  primaryLight: '#374151',
+  primaryDark: '#000000',
+  primaryText: '#ffffff', // White text for black buttons
+  secondary: '#6b7280',
   
   // Status colors
-  success: '#10b981',
-  successLight: '#34d399',
-  error: '#ef4444',
-  errorLight: '#f87171',
-  warning: '#f59e0b',
-  info: '#3b82f6',
+  success: '#16a34a',
+  successLight: '#22c55e',
+  error: '#dc2626',
+  errorLight: '#ef4444',
+  warning: '#ea580c',
+  info: '#0a0a0a',
   
   // Border and divider colors
   border: '#e5e7eb',
@@ -40,43 +41,44 @@ export const lightTheme = {
   overlay: 'rgba(0, 0, 0, 0.5)',
   
   // Accent colors
-  accent: '#3b82f6',
-  accentLight: '#93c5fd',
+  accent: '#0a0a0a',
+  accentLight: '#374151',
 };
 
 export const darkTheme = {
-  // Background colors - Deep blacks with subtle variations
+  // Background colors - Deep blacks with subtle variations (shadcn style)
   background: '#0a0a0a',
   backgroundSecondary: '#111111',
-  surface: '#1a1a1a',
-  surfaceSecondary: '#262626',
-  surfaceElevated: '#2a2a2a',
+  surface: '#0a0a0a',
+  surfaceSecondary: '#1a1a1a',
+  surfaceElevated: '#111111',
   
   // Text colors - High contrast whites
   textPrimary: '#ffffff',
-  textSecondary: '#d1d5db',
-  textTertiary: '#9ca3af',
-  textInverse: '#000000',
-  textAccent: '#60a5fa',
+  textSecondary: '#a1a1aa',
+  textTertiary: '#71717a',
+  textInverse: '#0a0a0a',
+  textAccent: '#ffffff',
   
-  // Brand colors
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#2563eb',
-  secondary: '#10b981',
+  // Brand colors - White background with black text for buttons
+  primary: '#ffffff',
+  primaryLight: '#f4f4f5',
+  primaryDark: '#e4e4e7',
+  primaryText: '#0a0a0a', // Black text for white buttons
+  secondary: '#a1a1aa',
   
   // Status colors
-  success: '#10b981',
-  successLight: '#34d399',
+  success: '#22c55e',
+  successLight: '#4ade80',
   error: '#ef4444',
   errorLight: '#f87171',
   warning: '#f59e0b',
-  info: '#3b82f6',
+  info: '#ffffff',
   
   // Border and divider colors
-  border: '#374151',
-  borderLight: '#4b5563',
-  divider: '#6b7280',
+  border: '#27272a',
+  borderLight: '#3f3f46',
+  divider: '#52525b',
   
   // Shadow and overlay
   shadow: 'rgba(0, 0, 0, 0.3)',
@@ -84,8 +86,8 @@ export const darkTheme = {
   overlay: 'rgba(0, 0, 0, 0.7)',
   
   // Accent colors
-  accent: '#60a5fa',
-  accentLight: '#93c5fd',
+  accent: '#ffffff',
+  accentLight: '#f4f4f5',
 };
 
 // Helper function to get theme based on isDarkMode boolean
@@ -99,9 +101,9 @@ export const colors = {
   black: '#000000',
   transparent: 'transparent',
   
-  // Brand colors
-  brandPrimary: '#3b82f6',
-  brandSecondary: '#10b981',
+  // Brand colors - Black and white theme
+  brandPrimary: '#0a0a0a',
+  brandSecondary: '#6b7280',
   
   // Social media colors
   twitter: '#1da1f2',

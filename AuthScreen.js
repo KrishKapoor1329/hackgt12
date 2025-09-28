@@ -78,7 +78,7 @@ const AuthScreen = ({ theme, isDarkMode, onAuthenticated }) => {
             onPress={handleAuth} 
             style={[styles.primaryButton, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={[styles.primaryButtonText, { color: theme.primaryText || '#ffffff' }]}>
               {mode === 'signIn' ? 'Sign In' : 'Sign Up'}
             </Text>
           </TouchableOpacity>
@@ -135,7 +135,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButtonText: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
