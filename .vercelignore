@@ -1,0 +1,7 @@
+# Don't upload these to Vercel
+node_modules/
+.expo/
+.git/
+*.log
+.DS_Store
+
